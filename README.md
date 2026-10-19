@@ -30,6 +30,8 @@ Each phrase has two bars: **CALL** (listen) and **ECHO** (repeat). The number on
 
 In keyboard mode, X performs a GRAB with your “other hand” for sections where one hand must GRAB while the other holds a SQUEEZE.
 
+REACH (touch) and SWEEP (slide) targets always award Perfect when touched within their active window; untouched targets still count as Miss. These gestures do not receive timing-based Good grades.
+
 **Scoring:** Perfect 100 / Good 50 / Miss 0, multiplied by your GROOVE multiplier (10-note combo ×2, 25-note combo ×3, 50-note combo ×4). Grades: S ≥95%, A ≥88%, B ≥75%, C ≥60%. Clear a stage by finishing with energy remaining and at least 60% accuracy. The results screen suggests a latency calibration adjustment based on your average timing offset.
 
 **Difficulty:** INTRO → FLOW → GROOVE → SYNC → BOUNCE → OVERDRIVE → POLYRHYTHM — seven levels in total.

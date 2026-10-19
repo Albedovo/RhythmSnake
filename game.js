@@ -190,16 +190,12 @@ function gameTick() {
 
 function tickReach(n, jt, pts, r, wnd) {
   if (jt < n.time - wnd.good - .6) return;
-  n.inside ??= {}; n.entered ??= {};
   for (const p of pts) {
-    const st = jt - p.age - lag('reach'), inside = distPx(p, n.pos) <= r, was = n.inside[p.handId];
-    if (inside && was === undefined) n.entered[p.handId] = -Infinity; // already parked when tracking began
-    else if (inside && !was) n.entered[p.handId] = st;
-    n.inside[p.handId] = inside;
-    if (!inside) continue;
-    const d = n.entered[p.handId] - n.time;
-    if (Math.abs(d) <= wnd.good) { n.state = 'hit'; award(n, timingGrade(d, cameraMode), d); return; }
-    if (d < -wnd.good && jt >= n.time) { n.state = 'hit'; n.reason = 'parked'; award(n, 'good', null, 'GOOD · MOVE IN ON THE BEAT'); return; }
+    const st = jt - p.age - lag('reach');
+    if (distPx(p, n.pos) > r || st < n.time - wnd.good) continue;
+    n.state = 'hit';
+    award(n, 'perfect', null);
+    return;
   }
   if (jt > n.time + wnd.good) fail(n, n.reason || 'none');
 }
@@ -211,10 +207,9 @@ function tickSweep(n, jt, pts, r, wnd) {
     for (const p of eligible) {
       const st = jt - p.age - lag('sweep');
       if (distPx(p, k.pos) > r * 1.6) continue;
-      if (Math.abs(st - k.time) <= wnd.perfect || st > k.time) { k.state = Math.abs(st - k.time) <= wnd.perfect ? 'perfect' : 'good'; break; }
-      k.early = true; // touching the dot early: Good unless still there on the beat
+      if (st >= k.time - wnd.good) { k.state = 'perfect'; break; }
     }
-    if (k.state === 'waiting' && jt > k.time + wnd.good) k.state = k.early ? 'good' : 'miss';
+    if (k.state === 'waiting' && jt > k.time + wnd.good) k.state = 'miss';
     if (k.state !== 'waiting') {
       const gained = score.add(k.state, 'sweep', null);
       if (k.state !== 'miss') sound.confirmSound(k.state);
@@ -224,7 +219,7 @@ function tickSweep(n, jt, pts, r, wnd) {
   }
   if (n.ticks.every(k => k.state !== 'waiting')) {
     const ok = n.ticks.filter(k => k.state !== 'miss').length / n.ticks.length;
-    if (ok >= .5) { n.state = 'hit'; burst(n, ok === 1 ? 'perfect' : 'good', ok === 1 ? 'CLEAN SWEEP' : 'SWEEP', 0, pxOf(n.ticks.at(-1).pos)); }
+    if (ok >= .5) { n.state = 'hit'; burst(n, 'perfect', ok === 1 ? 'CLEAN SWEEP' : 'SWEEP', 0, pxOf(n.ticks.at(-1).pos)); }
     else { n.state = 'miss'; n.reason = 'none'; burst(n, 'miss', 'SWEEP LOST', 0, pxOf(n.ticks.at(-1).pos)); if (score.drain() <= 0 && !practice) end('failed'); updateHud(); }
   }
 }
