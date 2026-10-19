@@ -1,7 +1,9 @@
 # FEED THE BEAT
 
 一款用摄像头和双手游玩的“呼叫与回应”节奏游戏。节拍先数 1-2-3-4，把一段节奏放给你听；下一小节轮到你用手把它复现出来，命中的音符会被底部的 Beat Mouth 吃掉。
+
 前期实现用codex效果不好，后续换到claude继续修改了，claude大人
+
 UIUX assignment week6
 
 ## ▶ 直接游玩
