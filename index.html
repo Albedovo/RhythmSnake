@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121426">
+<title>FEED THE BEAT · Call &amp; Response Body Rhythm</title>
+<link rel="stylesheet" href="style.css?v=18">
+</head>
+<body class="first-run">
+<main class="game-shell">
+  <video id="video" muted autoplay playsinline aria-label="Full-screen mirrored camera"></video>
+  <canvas id="game" aria-label="Call and response rhythm game over live video. Listen to the call bar, then echo it with your hands."></canvas>
+  <div class="screen-vignette" aria-hidden="true"></div>
+
+  <header class="hud">
+    <a class="logo" href="#" aria-label="Feed the Beat">FEED<span>THE BEAT</span></a>
+    <div class="stats" aria-label="Game statistics">
+      <div><span>SCORE</span><strong id="score">000000</strong></div>
+      <div><span>COMBO</span><strong id="combo">0</strong></div>
+      <div><span>GROOVE</span><strong id="groove" data-level="1">×1</strong></div>
+      <div class="acc-stat"><span>ACCURACY</span><strong id="accuracy">—</strong></div>
+    </div>
+    <nav class="hud-tools" aria-label="Game tools">
+      <button id="help" class="icon-button" aria-label="How to play">?</button>
+      <button id="settings" class="icon-button" aria-label="Open settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M9 4v6M15 14v6"/></svg></button>
+      <button id="fullscreen" class="icon-button" aria-label="Toggle fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg></button>
+    </nav>
+  </header>
+  <div class="topline"><span id="mode">● CAMERA · CONNECTING</span><span id="energy" aria-label="Energy">▪▪▪▪▪</span><span id="progress">READY</span></div>
+  <div id="feedback" aria-live="polite"></div>
+
+  <aside id="lesson" class="lesson" hidden aria-live="polite">
+    <div class="lesson-head"><span id="lesson-step">LESSON 1 / 8</span><div id="lesson-dots" class="lesson-dots"></div></div>
+    <h2 id="lesson-title">Listen, then echo</h2>
+    <p id="lesson-text"></p>
+    <p id="lesson-note" class="lesson-note"></p>
+    <div class="lesson-actions"><button id="lesson-skip" class="pill-button">Skip</button></div>
+  </aside>
+
+  <div id="overlay" class="launch-overlay">
+    <div class="launch-panel">
+      <div class="intro-content">
+        <p class="eyebrow"><span></span>A CALL &amp; RESPONSE BODY RHYTHM GAME <span class="edition">VOL. 03</span></p>
+        <h1>FEED<br>THE <em>BEAT.</em></h1>
+        <p class="intro-description">The beat counts <b>1 · 2 · 3 · 4</b> and plays a rhythm. <br>You echo it back with your hands, and the Beat Mouth eats every hit.</p>
+        <div class="intro-gestures" aria-label="Six moves">
+          <span data-type="grab"><i>●</i>GRAB<small>open → fist</small></span>
+          <span data-type="reach"><i>◎</i>REACH<small>move in on beat</small></span>
+          <span data-type="squeeze"><i>■</i>SQUEEZE<small>fist … open</small></span>
+          <span data-type="clap"><i>◆</i>CLAP<small>anywhere</small></span>
+          <span data-type="flip"><i>▲</i>FLIP<small>swipe</small></span>
+          <span data-type="sweep"><i>〰</i>SWEEP<small>dot by dot</small></span>
+        </div>
+        <label class="difficulty-choice" for="difficulty">LEVEL<select id="difficulty"><option value="easy">01 / INTRO</option><option value="normal" selected>02 / FLOW</option><option value="groove">03 / GROOVE</option><option value="hard">04 / SYNC</option><option value="bounce">05 / BOUNCE</option><option value="expert">06 / OVERDRIVE</option><option value="master">07 / POLYRHYTHM</option></select></label>
+        <p id="difficulty-description" class="level-description"></p>
+        <label class="difficulty-choice" for="input-mode">INPUT<select id="input-mode"><option value="camera" selected>Camera / two hands</option><option value="pointer">Trackpad · mouse · touch + keys</option></select></label>
+        <p id="camera-status" class="small">Connecting camera. Video stays on your device.</p>
+        <div class="launch-actions">
+          <button id="tutorial-start" class="tutorial-button">Tutorial · 2 min <span>↗</span></button>
+          <button id="start" class="start-button">Start <span>↗</span></button>
+          <button id="practice" class="practice-button">Practice · no energy loss</button>
+        </div>
+        <p class="first-run-hint">New here? The tutorial teaches each move with the camera, one at a time.</p>
+      </div>
+      <div id="summary" hidden aria-live="polite"></div>
+    </div>
+    <div class="intro-art" aria-hidden="true">
+      <svg viewBox="0 0 440 460">
+        <circle cx="220" cy="300" r="92" fill="#ff93c7"/>
+        <circle cx="186" cy="268" r="18" fill="#fff"/><circle cx="254" cy="268" r="18" fill="#fff"/>
+        <circle cx="190" cy="262" r="8" fill="#16172a"/><circle cx="258" cy="262" r="8" fill="#16172a"/>
+        <ellipse cx="220" cy="330" rx="38" ry="30" fill="#16172a"/>
+        <circle cx="90" cy="120" r="40" fill="#5be7df"/>
+        <rect x="300" y="70" width="80" height="80" fill="#e5f57c" transform="rotate(10 340 110)"/>
+        <path d="M220 40 L262 82 L220 124 L178 82Z" fill="#ff93c7" opacity=".7"/>
+        <path d="M380 220 L320 190 L320 250Z" fill="#b9a5ff"/>
+        <path d="M90 120 Q150 200 200 250" stroke="#5be7df" stroke-width="4" stroke-dasharray="3 12" fill="none" stroke-linecap="round"/>
+        <path d="M340 110 Q300 190 240 250" stroke="#e5f57c" stroke-width="4" stroke-dasharray="3 12" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span class="art-label">LISTEN. ECHO. FEED.</span>
+    </div>
+    <span class="overlay-footer">BODY RHYTHM / SOLO PLAY</span>
+  </div>
+
+  <footer class="play-toolbar">
+    <div class="live-input"><span class="live-dot"></span><span id="gesture">Waiting for hands</span><small id="tracking-details"></small></div>
+    <div class="action-buttons" aria-label="Pointer action controls">
+      <button id="action-grab" class="action-button" data-type="grab"><i>●</i><span>GRAB<small>hold = squeeze</small></span><kbd>Z / CLICK</kbd></button>
+      <button id="action-clap" class="action-button" data-type="clap"><i>◆</i><span>CLAP</span><kbd>SPACE</kbd></button>
+      <button id="action-left" class="action-button" data-type="flip"><i>◀</i><span>FLIP</span><kbd>←</kbd></button>
+      <button id="action-right" class="action-button" data-type="flip"><i>▶</i><span>FLIP</span><kbd>→</kbd></button>
+    </div>
+    <button id="stop" class="stop-button" disabled aria-label="End this run"><span>■</span> END</button>
+  </footer>
+
+  <section id="help-panel" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="modal">
+      <div class="modal-heading"><p class="eyebrow">HOW TO PLAY</p><button id="close-help" class="icon-button" aria-label="Close instructions">×</button></div>
+      <h2 id="help-title">Listen. Echo. Feed.</h2>
+      <p class="modal-intro">Every phrase is two bars. In the <b>CALL</b> bar the beat counts 1-2-3-4 and plays the rhythm with each move's own sound; the food shapes bounce in time. In the <b>ECHO</b> bar you play it back. Shapes fill up as their beat arrives; act when they are full. From FLOW up, moves on the left half belong to your left hand, the right half to your right.</p>
+      <div class="gesture-guide">
+        <article data-type="grab"><i>●</i><div><h3>GRAB</h3><p>Open your hand wide, then snap a fist on the beat. Only the side matters, not an exact spot.</p></div></article>
+        <article data-type="reach"><i>◎</i><div><h3>REACH</h3><p>Move your palm into the ring on the beat. Arriving on time is Perfect; waiting inside early is Good.</p></div></article>
+        <article data-type="squeeze"><i>■</i><div><h3>SQUEEZE</h3><p>Fist on the beat, keep it closed while the bar drains, open on the last beat. Grab and release are scored separately.</p></div></article>
+        <article data-type="clap"><i>◆</i><div><h3>CLAP</h3><p>Hands apart, then together on the beat. Anywhere in view.</p></div></article>
+        <article data-type="flip"><i>▲</i><div><h3>FLIP</h3><p>Open palm, swipe sideways the way the arrow points.</p></div></article>
+        <article data-type="sweep"><i>〰</i><div><h3>SWEEP</h3><p>Glide along the path and pass each numbered dot on its beat. Every dot scores; half the dots keep the sweep alive.</p></div></article>
+      </div>
+      <h3 class="help-sub">Scoring</h3>
+      <p class="tip">Perfect 100 · Good 50 · Miss 0, times your <b>GROOVE</b>: ×2 from 10 combo, ×3 from 25, ×4 from 50. Accuracy counts Perfect as 1 and Good as ½. Rank S ≥ 95% · A ≥ 88% · B ≥ 75% · C ≥ 60%. A miss costs one energy; every 16 combo gives one back. Clear a track with energy left and at least 60% accuracy.</p>
+      <p class="tip">Trackpad / touch: move into rings for Reach and Sweep, Z or click for Grab (hold for Squeeze), X for the other hand's Grab while squeezing, Space for Clap, ← → for Flip.</p>
+    </div>
+  </section>
+
+  <section id="settings-panel" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="modal settings-card">
+      <div class="modal-heading"><p class="eyebrow">YOUR PLAYGROUND</p><button id="close-settings" class="icon-button" aria-label="Close settings">×</button></div>
+      <h2 id="settings-title">Find your rhythm.</h2>
+      <div class="setting-block">
+        <span class="setting-label">INPUT</span>
+        <div class="input-options"><button id="pointer" class="pill-button">Trackpad + keys</button><button id="camera" class="pill-button selected">Connect camera</button></div>
+        <button id="cancel-camera" class="pill-button" hidden>Cancel connection</button>
+        <label class="camera-choice">Camera<select id="camera-device"><option value="">Default camera</option></select></label>
+        <video id="camera-preview" muted autoplay playsinline hidden></video>
+        <p id="status" class="setting-note" aria-live="polite">Video is processed locally. No recording or upload.</p>
+      </div>
+      <label class="setting-row" for="cursor-response"><span><b>Low-latency cursor</b><small>Short motion prediction for the drawn cursor only. Judging always uses raw positions.</small></span><input id="cursor-response" type="checkbox" checked></label>
+      <label class="setting-row" for="bpm"><span><b>Tempo</b><small>Each level sets a default; change it before playing.</small></span><select id="bpm"><option value="96">96 BPM · relaxed</option><option value="108">108 BPM · easy</option><option value="112">112 BPM · moderate</option><option value="120">120 BPM · steady</option><option value="126">126 BPM · brisk</option><option value="132">132 BPM · fast</option></select></label>
+      <label class="setting-row" for="sound"><span><b>Beat audio</b><small>Count-in, call sounds and percussion</small></span><input id="sound" type="checkbox" checked></label>
+      <label class="setting-row" for="motion"><span><b>Color motion</b><small>Hit bursts and flying food</small></span><input id="motion" type="checkbox" checked></label>
+      <div class="offset-setting"><label for="offset"><span>Input latency calibration</span><output id="offset-value" for="offset">0 ms</output></label><input id="offset" type="range" min="-200" max="200" step="10" value="0"><div class="range-labels"><span>−200 ms</span><span>+200 ms</span></div></div>
+      <p class="tip">Positive values mean your moves register late. After each run the results screen measures your average timing and can set this for you.</p>
+    </div>
+  </section>
+</main>
+<script type="module" src="game.js?v=18"></script>
+</body>
+</html>
