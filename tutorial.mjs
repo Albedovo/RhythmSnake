@@ -1,6 +1,6 @@
 // Interactive tutorial: each lesson loops one short phrase until the player lands it enough times.
 // A rest bar follows every attempt so feedback can be read before the next call.
-import { grab, reach, squeeze, clap, flip, sweep } from './rhythm-chart.mjs?v=19';
+import { grab, reach, squeeze, clap, flip, sweep } from './rhythm-chart.mjs?v=20';
 
 export const TUTORIAL_BPM = 90;
 

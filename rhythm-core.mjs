@@ -102,7 +102,7 @@ export function beatPanelRect(w, h, pointerMode = false) {
 }
 export function targetRadius(w, h) {
   const room = beatPanelRect(w, h).y - 58 - uiBounds.top - 42;
-  return Math.max(18, Math.min(52, w * .065, h * .065, room / 3));
+  return Math.max(22, Math.min(62, w * .078, h * .078, room / 3));
 }
 export const sweepRadius = (w, h) => targetRadius(w, h) * .65;
 export function playField(w, h) {

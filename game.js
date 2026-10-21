@@ -1,12 +1,12 @@
-import { TYPES, LEVELS, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=19';
-import { buildPhrase, songSource, lintSong, BAR, LEAD_IN } from './rhythm-chart.mjs?v=19';
-import { Score, bestFor, saveBest, MAX_ENERGY, GROOVE } from './scoring.mjs?v=19';
-import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=19';
-import * as sound from './audio.mjs?v=19';
-import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=19';
-import { CameraController } from './camera-controller.mjs?v=19';
-import { WorkerHandTracker } from './hand-worker-client.mjs?v=19';
-import { drawRhythm } from './rhythm-renderer.mjs?v=19';
+import { TYPES, LEVELS, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=20';
+import { buildPhrase, songSource, lintSong, BAR, LEAD_IN } from './rhythm-chart.mjs?v=20';
+import { Score, bestFor, saveBest, MAX_ENERGY, GROOVE } from './scoring.mjs?v=20';
+import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=20';
+import * as sound from './audio.mjs?v=20';
+import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=20';
+import { CameraController } from './camera-controller.mjs?v=20';
+import { WorkerHandTracker } from './hand-worker-client.mjs?v=20';
+import { drawRhythm } from './rhythm-renderer.mjs?v=20';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const $ = id => document.getElementById(id), canvas = $('game'), ctx = canvas.getContext('2d');
