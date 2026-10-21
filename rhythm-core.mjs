@@ -2,11 +2,11 @@
 
 export const TYPES = {
   grab:    { label: 'GRAB',    hint: 'Open hand, then fist on the beat', color: '#5be7df', glyph: '●', key: 'Z' },
-  reach:   { label: 'REACH',   hint: 'Move your hand into the ring on the beat', color: '#ffb96e', glyph: '◎', key: 'MOVE' },
+  reach:   { label: 'REACH',   hint: 'Touch inside the ring for Perfect', color: '#ffb96e', glyph: '◎', key: 'MOVE' },
   squeeze: { label: 'SQUEEZE', hint: 'Fist on the beat, open on the last beat', color: '#e5f57c', glyph: '■', key: 'HOLD Z' },
   clap:    { label: 'CLAP',    hint: 'Bring both hands together, anywhere', color: '#ff93c7', glyph: '◆', key: 'SPACE' },
   flip:    { label: 'FLIP',    hint: 'Swipe an open palm the arrow way', color: '#b9a5ff', glyph: '▲', key: '← →' },
-  sweep:   { label: 'SWEEP',   hint: 'Pass through each dot on its beat', color: '#ff8a65', glyph: '〰', key: 'MOVE' }
+  sweep:   { label: 'SWEEP',   hint: 'Touch each numbered circle for Perfect', color: '#ff8a65', glyph: '〰', key: 'MOVE' }
 };
 
 export const LEVELS = {
@@ -92,10 +92,24 @@ export function cameraPoint(point, width, height, sourceWidth = 640, sourceHeigh
   return { x: clamp(x, 0, 1), y: clamp(y, 0, 1), visible: x >= 0 && x <= 1 && y >= 0 && y <= 1 };
 }
 
-// The play field sits between the HUD and the beat panel; chart coordinates (0..1) map into it.
+// Shared layout and hit geometry: drawing and judging use exactly the same circles.
+let uiBounds = { top: 140, toolbarTop: null };
+export function setPlayLayout(bounds) { uiBounds = { ...uiBounds, ...bounds }; }
+export function beatPanelRect(w, h, pointerMode = false) {
+  const width = Math.min(620, w - 32), height = h < 600 ? 46 : w < 560 ? 58 : 68;
+  const footer = uiBounds.toolbarTop ?? h - (pointerMode ? 88 : 54);
+  return { x: (w - width) / 2, y: footer - 14 - height, width, height };
+}
+export function targetRadius(w, h) {
+  const room = beatPanelRect(w, h).y - 58 - uiBounds.top - 42;
+  return Math.max(18, Math.min(52, w * .065, h * .065, room / 3));
+}
+export const sweepRadius = (w, h) => targetRadius(w, h) * .65;
 export function playField(w, h) {
-  const top = Math.min(130, h * .2), bottom = h - (h < 600 ? 170 : 210), pad = Math.max(40, w * .06);
-  return { left: pad, right: w - pad, top, bottom: Math.max(top + 120, bottom) };
+  const r = targetRadius(w, h), top = uiBounds.top + r + 22;
+  const bottom = Math.max(top, beatPanelRect(w, h).y - 58 - r - 24);
+  const pad = Math.max(r + 10, w * .06);
+  return { left: pad, right: w - pad, top, bottom };
 }
 export function toScreen(p, w, h) {
   const f = playField(w, h);
@@ -105,4 +119,13 @@ export function fromScreen(x, y, w, h) {
   const f = playField(w, h);
   return { x: (x - f.left) / (f.right - f.left), y: (y - f.top) / (f.bottom - f.top) };
 }
-export const targetRadius = (w, h) => clamp(Math.min(w * .12, h * .15), 58, 110);
+// Fraction of a motion segment inside a circle, including fast crossings between camera frames.
+export function segmentCircleInterval(a, b, center, radius) {
+  const dx = b.x - a.x, dy = b.y - a.y, ox = a.x - center.x, oy = a.y - center.y;
+  const aa = dx * dx + dy * dy, cc = ox * ox + oy * oy - radius * radius;
+  if (aa < 1e-9) return cc <= 0 ? [0, 1] : null;
+  const bb = 2 * (ox * dx + oy * dy), disc = bb * bb - 4 * aa * cc;
+  if (disc < 0) return null;
+  const root = Math.sqrt(disc), lo = Math.max(0, (-bb - root) / (2 * aa)), hi = Math.min(1, (-bb + root) / (2 * aa));
+  return lo <= hi ? [lo, hi] : null;
+}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#121426">
 <title>FEED THE BEAT · Call &amp; Response Body Rhythm</title>
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body class="first-run">
 <main class="game-shell">
@@ -31,11 +31,11 @@
   <div id="feedback" aria-live="polite"></div>
 
   <aside id="lesson" class="lesson" hidden aria-live="polite">
-    <div class="lesson-head"><span id="lesson-step">LESSON 1 / 8</span><div id="lesson-dots" class="lesson-dots"></div></div>
+    <div class="lesson-head"><span id="lesson-phase">GET READY</span><span id="lesson-step">LESSON 1 / 8</span><div id="lesson-dots" class="lesson-dots"></div></div>
     <h2 id="lesson-title">Listen, then echo</h2>
-    <p id="lesson-text"></p>
-    <p id="lesson-note" class="lesson-note"></p>
-    <div class="lesson-actions"><button id="lesson-skip" class="pill-button">Skip</button></div>
+    <div class="lesson-copy"><p id="lesson-text"></p><ol id="lesson-steps"></ol></div>
+    <div class="lesson-foot"><p id="lesson-note" class="lesson-note"></p>
+    <div class="lesson-actions"><button id="lesson-skip" class="pill-button">Skip</button></div></div>
   </aside>
 
   <div id="overlay" class="launch-overlay">
@@ -57,7 +57,7 @@
         <label class="difficulty-choice" for="input-mode">INPUT<select id="input-mode"><option value="camera" selected>Camera / two hands</option><option value="pointer">Trackpad · mouse · touch + keys</option></select></label>
         <p id="camera-status" class="small">Connecting camera. Video stays on your device.</p>
         <div class="launch-actions">
-          <button id="tutorial-start" class="tutorial-button">Tutorial · 2 min <span>↗</span></button>
+          <button id="tutorial-start" class="tutorial-button">Guided tutorial <span>↗</span></button>
           <button id="start" class="start-button">Start <span>↗</span></button>
           <button id="practice" class="practice-button">Practice · no energy loss</button>
         </div>
@@ -100,11 +100,11 @@
       <h2 id="help-title">Listen. Echo. Feed.</h2>
       <p class="modal-intro">Every phrase is two bars. In the <b>CALL</b> bar the beat counts 1-2-3-4 and plays the rhythm with each move's own sound; the food shapes bounce in time. In the <b>ECHO</b> bar you play it back. Shapes fill up as their beat arrives; act when they are full. From FLOW up, moves on the left half belong to your left hand, the right half to your right.</p>
       <div class="gesture-guide">
-        <article data-type="grab"><i>●</i><div><h3>GRAB</h3><p>Open your hand wide, then snap a fist on the beat. Only the side matters, not an exact spot.</p></div></article>
-        <article data-type="reach"><i>◎</i><div><h3>REACH</h3><p>Move your palm into the ring on the beat. Arriving on time is Perfect; waiting inside early is Good.</p></div></article>
-        <article data-type="squeeze"><i>■</i><div><h3>SQUEEZE</h3><p>Fist on the beat, keep it closed while the bar drains, open on the last beat. Grab and release are scored separately.</p></div></article>
+        <article data-type="grab"><i>●</i><div><h3>GRAB</h3><p>Open your hand wide, then snap a fist on the beat. Your palm cursor must be inside the outlined circle.</p></div></article>
+        <article data-type="reach"><i>◎</i><div><h3>REACH</h3><p>Move your palm into the ring on the beat. Every valid touch is Perfect, including waiting inside.</p></div></article>
+        <article data-type="squeeze"><i>■</i><div><h3>SQUEEZE</h3><p>Make a fist inside the outlined circle on the beat, keep it closed while the bar drains, then open on the last beat. Grab and release are scored separately.</p></div></article>
         <article data-type="clap"><i>◆</i><div><h3>CLAP</h3><p>Hands apart, then together on the beat. Anywhere in view.</p></div></article>
-        <article data-type="flip"><i>▲</i><div><h3>FLIP</h3><p>Open palm, swipe sideways the way the arrow points.</p></div></article>
+        <article data-type="flip"><i>▲</i><div><h3>FLIP</h3><p>Swipe an open palm through the outlined circle in the arrow’s direction on the beat. No need to start inside.</p></div></article>
         <article data-type="sweep"><i>〰</i><div><h3>SWEEP</h3><p>Glide along the path and pass each numbered dot on its beat. Every dot scores; half the dots keep the sweep alive.</p></div></article>
       </div>
       <h3 class="help-sub">Scoring</h3>
@@ -134,6 +134,6 @@
     </div>
   </section>
 </main>
-<script type="module" src="game.js?v=18"></script>
+<script type="module" src="game.js?v=19"></script>
 </body>
 </html>

@@ -13,7 +13,7 @@ UI/UX assignment — Week 6
 - Use desktop Chrome or Safari, allow camera access, and wear headphones for the best experience.
 - Video is processed locally in your browser. It is never recorded or uploaded.
 - No camera? Under INPUT, select “Trackpad · mouse · touch + keys” to play with your mouse and keyboard.
-- Start with **Tutorial · 2 min** to learn each gesture step by step.
+- Start with **Guided tutorial** to learn each gesture step by step, with a demonstration before each lesson.
 
 ## How to Play
 
@@ -21,12 +21,14 @@ Each phrase has two bars: **CALL** (listen) and **ECHO** (repeat). The number on
 
 | Gesture | Camera | Keyboard / Mouse |
 |---|---|---|
-| GRAB ● | Start with an open hand, then make a fist on the beat | Z or click |
+| GRAB ● | Start with an open hand, then make a fist inside the outlined circle on the beat | Z or click |
 | REACH ◎ | Move your hand into the circle on the beat | Move the pointer into the circle |
-| SQUEEZE ■ | Make a fist, then open your hand on the OPEN beat | Hold Z, then release on the OPEN beat |
+| SQUEEZE ■ | Make a fist inside the outlined circle, then open your hand on the OPEN beat | Hold Z, then release on the OPEN beat |
 | CLAP ◆ | Clap both hands together anywhere in view | Space |
-| FLIP ▲ | Swipe your palm horizontally in the arrow’s direction | ← / → |
+| FLIP ▲ | Swipe your open palm through the outlined circle in the arrow’s direction on the beat | Aim the pointer inside the circle, then press ← / → |
 | SWEEP 〰 | Follow the path, passing through one point per beat | Move the pointer along the path |
+
+The fixed circles show the actual hit areas for GRAB, REACH, SQUEEZE, and FLIP. SWEEP uses a separate outlined circle for each path point. CLAP works anywhere in camera view, including fast claps starting from opposite sides. For FLIP, the trajectory must cross the target on its numbered beat; you do not need to start inside.
 
 In keyboard mode, X performs a GRAB with your “other hand” for sections where one hand must GRAB while the other holds a SQUEEZE.
 
@@ -63,3 +65,7 @@ Then open http://localhost:8137. Camera access requires localhost or HTTPS.
 | `DESIGN.md` | Design notes |
 
 Hand tracking uses [MediaPipe Hands](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (Apache 2.0). Its files are included in `vendor/`.
+
+## Regression Checks
+
+Run `node tests/gestures.mjs` to check clap recovery, Flip trajectory timing, circle boundaries, Touch/Slide scoring, tutorial demonstrations, and playfield spacing across screen sizes.

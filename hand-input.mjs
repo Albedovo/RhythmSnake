@@ -25,25 +25,37 @@ export class HandTracks {
 // close in. Fast or wide claps often blur, or the two hands merge into one detection, before the
 // touching frame is ever seen; a fast approach that then vanishes counts as a clap at the predicted
 // contact time.
-export const CLAP = { apart: 1.4, contact: .9, closingSpeed: 4, lostWithin: 160, armedFor: 600, cooldown: 80 };
+export const CLAP = { apart: 1.4, contact: .9, closingSpeed: 4, lostWithin: 180, armedFor: 600, cooldown: 80 };
 export class ClapGesture {
  constructor(){this.reset();}
- reset(){this.last=null;this.prev=null;this.armedAt=-1e9;this.lastHit=-1e9;}
+ reset(){this.last=null;this.prev=null;this.prevClosing=null;this.armedAt=-1e9;this.lastHit=-1e9;}
  armed(t){return t-this.armedAt<CLAP.armedFor&&t-this.lastHit>CLAP.cooldown;}
- hit(t){this.lastHit=t;this.armedAt=-1e9;this.last=this.prev=null;return t;}
+ hit(t){this.lastHit=t;this.armedAt=-1e9;this.last=this.prev=this.prevClosing=null;return t;}
  // Returns the contact timestamp (ms, same clock as `now`) or null.
  update(pair,now){
   if(!pair){
-   const a=this.last,b=this.prev;this.last=this.prev=null;
-   if(!a||!b||now-a.t>CLAP.lostWithin||!this.armed(a.t))return null;
-   const v=(a.r-b.r)/((a.t-b.t)/1000); // hand lengths per second, negative while closing
-   return v<-CLAP.closingSpeed&&a.r<3.5?this.hit(a.t+Math.min(120,a.r/-v*1000)):null;
+   const a=this.last,b=this.prev;
+   if(!a||!b||now-a.t>CLAP.lostWithin||!this.armed(now)){if(a&&now-a.t>CLAP.lostWithin)this.last=this.prev=null;return null;}
+   const dt=(a.t-b.t)/1000,v=dt>0?(a.r-b.r)/dt:0;
+   // Wide, fast claps can disappear well before contact. Keep the last two samples
+   // until the predicted contact, rather than discarding them on the first lost frame.
+   const travel=v<-CLAP.closingSpeed?(a.r-CLAP.contact)/-v*1000:Infinity;
+   const contact=a.t+Math.max(0,travel);
+   return travel<=140&&now>=contact?this.hit(contact):null;
   }
   const s={t:now,r:pair.ratio},p=this.last&&now-this.last.t<150?this.last:null;
   this.prev=p;this.last=s;
   if(s.r>=CLAP.apart)this.armedAt=now; // separating re-arms even during the cooldown, for rapid claps
   if(!this.armed(now))return null;
-  const v=p?(s.r-p.r)/((now-p.t)/1000):0;
+  const v=p&&now>p.t?(s.r-p.r)/((now-p.t)/1000):0;
+  // Two visible samples may straddle contact entirely. Recover the minimum of
+  // the approach/rebound when the hands were already within two hand lengths.
+  const before=this.prevClosing;
+  this.prevClosing=v<-CLAP.closingSpeed?{t:now,r:s.r,v}:null;
+  if(p&&before&&p.t===before.t&&v>CLAP.closingSpeed&&p.r<=CLAP.contact*2.2){
+   const contact=p.t+Math.max(0,(p.r-CLAP.contact)/-before.v*1000);
+   if(contact<=now)return this.hit(contact);
+  }
   return s.r<=CLAP.contact||(s.r<=CLAP.contact*1.6&&v<-CLAP.closingSpeed)?this.hit(now):null;
  }
 }

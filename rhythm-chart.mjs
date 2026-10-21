@@ -152,7 +152,7 @@ export function samplePath(name) {
 // (in beat order) so a bar with two or three left-hand moves stays readable and nothing overlaps.
 const ZIGZAG = [{ x: 0, y: 0 }, { x: .17, y: .27 }, { x: 0, y: .54 }, { x: .17, y: .81 }];
 function placeGesture(note, index) {
-  if (note.side === 'B') return { x: .5, y: .28 + index * .3 };
+  if (note.side === 'B') return { x: index % 2 ? .62 : .38, y: .12 + index * .25 };
   const z = ZIGZAG[index % ZIGZAG.length], inward = note.side === 'L' ? 1 : -1;
   return { x: (note.side === 'L' ? .2 : .8) + inward * z.x, y: .18 + z.y };
 }

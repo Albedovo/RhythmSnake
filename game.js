@@ -1,18 +1,26 @@
-import { TYPES, LEVELS, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius } from './rhythm-core.mjs?v=18';
-import { buildPhrase, songSource, lintSong, BAR, LEAD_IN } from './rhythm-chart.mjs?v=18';
-import { Score, bestFor, saveBest, MAX_ENERGY, GROOVE } from './scoring.mjs?v=18';
-import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=18';
-import * as sound from './audio.mjs?v=18';
-import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=18';
-import { CameraController } from './camera-controller.mjs?v=18';
-import { WorkerHandTracker } from './hand-worker-client.mjs?v=18';
-import { drawRhythm } from './rhythm-renderer.mjs?v=18';
+import { TYPES, LEVELS, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=19';
+import { buildPhrase, songSource, lintSong, BAR, LEAD_IN } from './rhythm-chart.mjs?v=19';
+import { Score, bestFor, saveBest, MAX_ENERGY, GROOVE } from './scoring.mjs?v=19';
+import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=19';
+import * as sound from './audio.mjs?v=19';
+import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=19';
+import { CameraController } from './camera-controller.mjs?v=19';
+import { WorkerHandTracker } from './hand-worker-client.mjs?v=19';
+import { drawRhythm } from './rhythm-renderer.mjs?v=19';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const $ = id => document.getElementById(id), canvas = $('game'), ctx = canvas.getContext('2d');
 let w = 1, h = 1;
 function resize() { const r = canvas.getBoundingClientRect(), dpr = Math.min(devicePixelRatio, 1.5); w = r.width; h = r.height; canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
 new ResizeObserver(resize).observe(canvas);
+function syncLayout() {
+  const rect = canvas.getBoundingClientRect();
+  const lesson = $('lesson'), lessonBottom = lesson.hidden ? 0 : lesson.getBoundingClientRect().bottom - rect.top;
+  const feedbackBottom = $('feedback').getBoundingClientRect().bottom - rect.top;
+  setPlayLayout({ top: Math.max(feedbackBottom, lessonBottom), toolbarTop: document.querySelector('.play-toolbar').getBoundingClientRect().top - rect.top });
+}
+const layoutObserver = new ResizeObserver(syncLayout);
+for (const el of [$('lesson'), document.querySelector('.play-toolbar')]) layoutObserver.observe(el);
 
 // --- run state --------------------------------------------------------------------------------
 let running = false, paused = false, pauseAt = 0, startTime = 0, beat = .5, nextStep = 0, scheduler = 0;
@@ -121,35 +129,55 @@ function act(kind, point, eventTime, dir = null) {
   if (!running || paused) return false;
   const types = KIND[kind];
   if (kind === 'fist' && holdingBy(point.handId)) return false;
-  const base = judgeTime(eventTime), wnd = win().good;
-  const sideOk = n => !cameraMode || n.side === 'A' || n.side === 'B' || onSide(n.side, point.x);
-  const near = notes.filter(n => n.state === 'waiting' && !n.demo && types.includes(n.type) && Math.abs(base - lag(n.type) - n.time) < .6)
-    .sort((a, b) => Math.abs(base - a.time) - Math.abs(base - b.time));
-  // Two notes can share a beat (one per hand). Prefer the closest in time, then the one on the
-  // gesturing hand's side of the screen, so each hand takes its own note instead of the first in the list.
-  const noteX = n => n.pos ? toScreen(n.pos, w, h).x / w : .5;
-  const cost = n => Math.abs(base - lag(n.type) - n.time) + (point.x != null ? .3 * Math.abs(point.x - noteX(n)) : 0);
-  const hit = near.filter(n => Math.abs(base - lag(n.type) - n.time) <= wnd && sideOk(n) && (n.type !== 'flip' || n.dir === dir)).sort((a, b) => cost(a) - cost(b))[0];
-  if (!hit) {
-    const n = near[0];
+  const base = judgeTime(eventTime), wnd = win().good, radius = targetRadius(w, h);
+  const near = notes.filter(n => n.state === 'waiting' && !n.demo && types.includes(n.type) && Math.abs(base - n.time) < .8);
+  const events = near.map(n => {
+    if (n.type === 'flip' && point.path) return { n, event: flipContact(n, point.path, point.handId) };
+    const spatial = n.type === 'clap' || (point.visible && distPx(point, n.pos) <= radius);
+    return { n, event: spatial ? { delta: base - lag(n.type) - n.time, point } : null };
+  });
+  const sideOk = (n, p) => !cameraMode || n.side === 'A' || n.side === 'B' || onSide(n.side, p.x);
+  const match = events.filter(({ n, event }) => event && Math.abs(event.delta) <= wnd && sideOk(n, event.point) && (n.type !== 'flip' || n.dir === dir))
+    .sort((a, b) => Math.abs(a.event.delta) - Math.abs(b.event.delta))[0];
+  if (!match) {
+    const n = near.sort((a,b) => Math.abs(base-a.time)-Math.abs(base-b.time))[0];
     if (n) {
       const d = base - lag(n.type) - n.time;
-      n.reason = Math.abs(d) > wnd ? (d < 0 ? 'early' : 'late') : !sideOk(n) ? 'side' : 'none';
-      if (n.reason === 'side') feedback('OTHER HAND', 'miss');
+      n.reason = Math.abs(d) > wnd ? (d < 0 ? 'early' : 'late') : !sideOk(n, point) ? 'side' : n.type === 'clap' ? 'none' : 'position';
+      if (n.reason === 'position') feedback('MOVE INSIDE THE CIRCLE', 'neutral');
+      else if (n.reason === 'side') feedback('OTHER HAND', 'miss');
       else if (n.reason !== 'none') feedback(n.reason.toUpperCase(), 'neutral');
     }
     return false;
   }
-  const delta = base - lag(hit.type) - hit.time, grade = timingGrade(delta, cameraMode);
+  const { n: hit, event } = match, delta = event.delta, grade = timingGrade(delta, cameraMode);
   if (hit.type === 'squeeze') {
     hit.state = 'holding'; hit.owner = point.handId; hit.breakAt = null;
     award(hit, grade, delta, grade === 'perfect' ? 'SQUEEZE!' : 'SQUEEZE');
   } else {
     hit.state = 'hit'; award(hit, grade, delta);
-    // A single key cannot play both hands' notes on the same beat, so in pointer mode one press covers them.
-    if (!cameraMode) for (const n of near) if (n !== hit && n.type === hit.type && Math.abs(n.time - hit.time) < 1e-3) { n.state = 'hit'; award(n, grade, delta); }
+    // A key press only covers additional notes whose circles also contain the pointer.
+    if (!cameraMode) for (const n of near) if (n !== hit && n.type === hit.type && Math.abs(n.time - hit.time) < 1e-3 && point.visible && distPx(point, n.pos) <= radius) { n.state = 'hit'; award(n, grade, delta); }
   }
   return true;
+}
+// Judge the time the moving palm crosses the Flip circle, rather than its starting position.
+function flipContact(n, path, handId) {
+  const center = toScreen(n.pos, w, h), r = targetRadius(w, h), sign = n.dir === 'left' ? -1 : 1;
+  let best = null;
+  for (let i = 1; i < path.length; i++) {
+    const a = path[i - 1], b = path[i], dt = b.time - a.time;
+    if (dt <= 0 || dt > .15 || !a.visible || !b.visible) continue;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    if (dx * sign <= 0 || Math.abs(dx) / dt < .25 || Math.abs(dx * w) < Math.abs(dy * h) * .8) continue;
+    const span = segmentCircleInterval({ x:a.x*w, y:a.y*h }, { x:b.x*w, y:b.y*h }, center, r);
+    if (!span) continue;
+    const t0 = judgeTime(a.time + dt * span[0]), t1 = judgeTime(a.time + dt * span[1]);
+    const at = Math.max(t0, Math.min(t1, n.time)), u = (at - judgeTime(a.time)) / dt;
+    const event = { delta: at - n.time, point: { x:a.x+dx*u, y:a.y+dy*u, handId, visible:true } };
+    if (!best || Math.abs(event.delta) < Math.abs(best.delta)) best = event;
+  }
+  return best;
 }
 // Opening the hand ends a squeeze; the release is judged against the squeeze's last beat.
 function release(handId, eventTime) {
@@ -192,6 +220,7 @@ function tickReach(n, jt, pts, r, wnd) {
   if (jt < n.time - wnd.good - .6) return;
   for (const p of pts) {
     const st = jt - p.age - lag('reach');
+    if (!p.visible) continue;
     if (distPx(p, n.pos) > r || st < n.time - wnd.good) continue;
     n.state = 'hit';
     award(n, 'perfect', null);
@@ -206,7 +235,7 @@ function tickSweep(n, jt, pts, r, wnd) {
     if (k.state !== 'waiting' || jt < k.time - wnd.good) continue;
     for (const p of eligible) {
       const st = jt - p.age - lag('sweep');
-      if (distPx(p, k.pos) > r * 1.6) continue;
+      if (!p.visible || distPx(p, k.pos) > sweepRadius(w, h)) continue;
       if (st >= k.time - wnd.good) { k.state = 'perfect'; break; }
     }
     if (k.state === 'waiting' && jt > k.time + wnd.good) k.state = 'miss';
@@ -238,7 +267,7 @@ function settlePhrases() {
     ph.reported = true;
     const failed = ph.notes.find(n => n.state === 'miss' || n.tail?.state === 'miss');
     if (mode !== 'tutorial') continue;
-    const res = tutorial.report(ph.lesson, ph.demo || !failed, failed?.reason, failed?.type);
+    const res = tutorial.report(ph.lesson, ph.demo || !failed, failed?.reason, failed?.type, ph.demo);
     if (!res) continue;
     lessonMessage = { ...res, until: performance.now() + beat * 4000 };
     if (res.kind === 'pass' || res.kind === 'advance' || res.kind === 'finish') sound.chime();
@@ -338,7 +367,16 @@ function updateLesson() {
   const l = tutorial.lesson; box.hidden = false;
   $('lesson-step').textContent = `LESSON ${tutorial.index + 1} / ${tutorial.lessons.length}`;
   $('lesson-title').textContent = l.title;
-  $('lesson-text').textContent = l.text;
+  if (box.dataset.lesson !== l.id) {
+    box.dataset.lesson = l.id;
+    $('lesson-text').textContent = l.text;
+    const steps = !cameraMode && l.keys ? l.keys : l.steps;
+    $('lesson-steps').replaceChildren(...steps.map(step => { const li = document.createElement('li'); li.textContent = step; return li; }));
+  }
+  const ph = phraseAt(visualTime()), elapsed = ph ? (visualTime() - ph.callAt) / beat : -1;
+  const phase = elapsed < 0 || ph?.lesson !== tutorial.index ? 'GET READY' : elapsed < 4 ? 'LISTEN · WATCH' : elapsed < 4 * (1 + ph.times) ? (ph.demo ? 'DEMO · WATCH' : 'YOUR TURN') : 'REST · READ THE TIPS';
+  $('lesson-phase').textContent = phase;
+  $('lesson-phase').dataset.active = phase === 'YOUR TURN';
   $('lesson-dots').innerHTML = Array.from({ length: l.need }, (_, i) => `<i class="${i < tutorial.passes ? 'on' : ''}"></i>`).join('');
   const m = lessonMessage && performance.now() < lessonMessage.until ? lessonMessage : null;
   $('lesson-note').textContent = m ? m.text : '';
@@ -354,7 +392,7 @@ let padHeld = {};
 function padFist(id = 'pad') { if (cameraMode || padHeld[id]) return; padHeld[id] = true; act('fist', { ...pointer, handId: id }, songTime()); }
 function padRelease(id = 'pad') { if (!padHeld[id]) return; padHeld[id] = false; release(id, songTime()); }
 canvas.addEventListener('pointermove', e => { if (cameraMode) return; const r = canvas.getBoundingClientRect(); pointer = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, visible: true, handId: 'pad' }; });
-canvas.addEventListener('pointerleave', () => { pointer.visible = false; });
+// Keep the last pointer target visible when using the toolbar or keyboard.
 canvas.tabIndex = 0;
 canvas.addEventListener('pointerdown', e => {
   if (cameraMode) return; e.preventDefault(); canvas.focus(); canvas.setPointerCapture(e.pointerId);
@@ -369,14 +407,14 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyZ') { e.preventDefault(); padFist(); }
   if (e.code === 'KeyX') { e.preventDefault(); padFist('pad2'); }
   if (e.code === 'Space') { e.preventDefault(); act('clap', pointer, songTime()); }
-  if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') { e.preventDefault(); act('flip', { ...pointer, x: e.code === 'ArrowLeft' ? .25 : .75 }, songTime(), e.code === 'ArrowLeft' ? 'left' : 'right'); }
+  if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') { e.preventDefault(); act('flip', pointer, songTime(), e.code === 'ArrowLeft' ? 'left' : 'right'); }
 });
 document.addEventListener('keyup', e => { if (e.code === 'KeyZ') padRelease(); if (e.code === 'KeyX') padRelease('pad2'); });
 $('action-grab').addEventListener('pointerdown', e => { if (cameraMode) return; e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); padFist(); });
 for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) $('action-grab').addEventListener(ev, () => padRelease());
 $('action-clap').addEventListener('pointerdown', e => { e.preventDefault(); if (!cameraMode) act('clap', pointer, songTime()); });
-$('action-left').addEventListener('pointerdown', e => { e.preventDefault(); if (!cameraMode) act('flip', { ...pointer, x: .25 }, songTime(), 'left'); });
-$('action-right').addEventListener('pointerdown', e => { e.preventDefault(); if (!cameraMode) act('flip', { ...pointer, x: .75 }, songTime(), 'right'); });
+$('action-left').addEventListener('pointerdown', e => { e.preventDefault(); if (!cameraMode) act('flip', pointer, songTime(), 'left'); });
+$('action-right').addEventListener('pointerdown', e => { e.preventDefault(); if (!cameraMode) act('flip', pointer, songTime(), 'right'); });
 
 // --- camera -----------------------------------------------------------------------------------
 const camera = new CameraController({ video: $('video'), preview: $('camera-preview'), loadDetector: () => WorkerHandTracker.create(), onStatus: (stage, text) => {
@@ -388,7 +426,7 @@ function stopCamera() {
   camera.stop(); cameraMode = cameraBusy = false; inputMode = 'pointer'; $('input-mode').value = 'pointer';
   $('camera').disabled = false; $('cancel-camera').hidden = true; $('video').style.display = 'none'; document.body.classList.remove('camera-active'); resetInputs();
   $('mode').textContent = '● TRACKPAD / KEYS'; $('gesture').textContent = 'MOVE · CLICK/Z · SPACE · ← →';
-  $('camera-status').textContent = 'Trackpad ready. Move into rings for Reach and Sweep; Z or click = Grab (hold for Squeeze), X = Grab with the other hand, Space = Clap, ← → = Flip.';
+  $('camera-status').textContent = 'Trackpad ready. Move into rings for Reach and Sweep; Z or click = Grab (hold for Squeeze), X = Grab with the other hand, Space = Clap, ← → = Flip inside its circle.';
   document.body.classList.add('pointer-mode'); refreshLaunch();
 }
 async function connectCamera() {
@@ -421,15 +459,19 @@ function track(now) {
     fistGesture(hand, time);
     // Swipes only need a hand that is not a fist: fast flips blur the fingers, so "fully open" drops frames.
     if (hand.closure < HAND.fistAt) {
-      hand.history.push({ x: hand.x, y: hand.y, at: timestamp }); hand.history = hand.history.filter(p => timestamp - p.at <= 240);
+      hand.history.push({ ...handPoint(hand), at: timestamp, time });
+      hand.history = hand.history.filter(p => timestamp - p.at <= 160);
       const origin = hand.history[0];
-      if (origin && timestamp - origin.at >= 45) {
-        const dx = hand.x - origin.x, dy = hand.y - origin.y;
-        if (Math.abs(dx) > .055 && Math.abs(dx) > Math.abs(dy) * .8 && timestamp - hand.lastSwipe > 240 && act('flip', handPoint({ ...origin, id: hand.id, visible: true }), time, dx > 0 ? 'right' : 'left')) { hand.lastSwipe = timestamp; hand.history = []; }
+      if (origin && timestamp - origin.at >= 16) {
+        const dx = handPoint(hand).x - origin.x;
+        if (Math.abs(dx) > .025 && timestamp - hand.lastSwipe > 180 && act('flip', { ...handPoint(hand), path: hand.history }, time, dx > 0 ? 'right' : 'left')) {
+          hand.lastSwipe = timestamp; hand.history = [];
+        }
       }
     } else hand.history = [];
   }
-  const pair = features.length === 2 ? clapFeatures(features[0], features[1]) : null;
+  const pairHands = [...live].sort((a,b) => a.id-b.id);
+  const pair = pairHands.length === 2 ? clapFeatures(pairHands[0], pairHands[1]) : null;
   const contact = clapGesture.update(pair, timestamp);
   if (contact != null) act('clap', { x: .5, y: .5, visible: true, handId: 'clap' }, time + (contact - timestamp) / 1000);
   const text = live.length ? `${live.length} HAND${live.length > 1 ? 'S' : ''} · ` + live.map(hd => hd.fist ? 'FIST' : hd.open ? 'OPEN' : '…').join(' / ') : 'Show your hands to the camera';
@@ -478,6 +520,7 @@ window.addEventListener('pagehide', () => { sound.silence(); camera.stop(); });
 let lastUi = 0;
 function draw(now) {
   requestAnimationFrame(draw);
+  syncLayout();
   if (!virtual) { track(now); if (running && !paused) gameTick(); }
   effects = effects.filter(e => now - e.born < 900);
   const vt = visualTime(), ph = running ? phraseAt(vt) : null;

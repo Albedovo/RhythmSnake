@@ -1,7 +1,7 @@
 // Canvas drawing. Timing is read from the two-bar CALL / ECHO panel and from food shapes that
 // fill up as their beat approaches; there are no approach rings or scan lines.
-import { TYPES, clamp, toScreen, playField, targetRadius } from './rhythm-core.mjs?v=18';
-import { pathPoint, BAR } from './rhythm-chart.mjs?v=18';
+import { TYPES, clamp, toScreen, playField, targetRadius, sweepRadius, beatPanelRect } from './rhythm-core.mjs?v=19';
+import { pathPoint, BAR } from './rhythm-chart.mjs?v=19';
 
 const TAU = Math.PI * 2;
 const GROOVE_COLORS = { 1: '#ff93c7', 2: '#ffb96e', 3: '#e5f57c', 4: '#5be7df' };
@@ -57,10 +57,6 @@ function beatBadge(c, b, x, y, s, n, kind = 'hit') {
 }
 
 // --- layout -----------------------------------------------------------------------------------
-function panelRect(w, h, pointerMode) {
-  const width = Math.min(620, w - 32), height = w < 560 ? 58 : 68;
-  return { x: (w - width) / 2, y: h - (pointerMode ? 104 : 70) - height, width, height };
-}
 
 // --- background & zones -----------------------------------------------------------------------
 function background(c, s) {
@@ -96,19 +92,30 @@ function drawNote(c, n, s, r) {
   c.save(); c.globalAlpha = ease(appear);
   if (n.type === 'sweep') drawSweep(c, n, s, r);
   else {
-    const p = toScreen(n.pos, s.w, s.h), size = (n.type === 'reach' ? r : r * .55) * (1 + bounce);
+    const p = toScreen(n.pos, s.w, s.h), size = n.type === 'reach' ? r : r * .72 * (1 + bounce * .25);
+    // This fixed ring is the actual hit boundary. The shape can pulse inside it.
+    if (n.type !== 'clap' && n.type !== 'reach') {
+      circle(c, p.x, p.y, r, color + '18');
+      circle(c, p.x, p.y, r, color + 'cc', true, 2);
+    }
     if (n.type === 'reach') {
       c.save(); c.setLineDash(ripe < 1 ? [10, 8] : []); circle(c, p.x, p.y, size, ripe >= .99 ? color : color + 'aa', true, 4); c.restore();
       circle(c, p.x, p.y, size * ripe, color + '40');
-      circle(c, p.x, p.y, 6, color);
     } else food(c, n.type, p.x, p.y, size, n.state === 'holding' ? 1 : ripe, { dir: n.dir });
     if (n.type === 'flip') { const s2 = n.dir === 'left' ? -1 : 1; c.strokeStyle = color; c.lineWidth = 4; c.lineCap = 'round'; for (let k = 1; k <= 3; k++) { const o = (k * 14 + (s.now / 25) % 14) * s2; c.globalAlpha = ease(appear) * (1 - k / 4); c.beginPath(); c.moveTo(p.x - s2 * size - o, p.y - 8); c.lineTo(p.x - s2 * size - o - s2 * 10, p.y - 8); c.moveTo(p.x - s2 * size - o, p.y + 8); c.lineTo(p.x - s2 * size - o - s2 * 10, p.y + 8); c.stroke(); } c.globalAlpha = ease(appear); }
     if (n.type === 'clap' && n.state === 'waiting') { const gap = (1 - ripe) * r * .7 + size * .15; glyph(c, 'flip', p.x - size - gap, p.y, size * .45, color + 'cc', 'right'); glyph(c, 'flip', p.x + size + gap, p.y, size * .45, color + 'cc', 'left'); }
     if (n.type === 'squeeze') drawSqueezeBar(c, n, s, p, size);
     const label = n.state === 'holding' ? `KEEP FIST · OPEN ON ${beatName(n.beatInBar + n.durBeats)}` : TYPES[n.type].label + (n.side === 'L' ? ' · LEFT' : n.side === 'R' ? ' · RIGHT' : '');
-    text(c, label, p.x, p.y + size + (n.type === 'reach' ? 16 : 22), 12, due ? color : '#fff');
-    if (n.state !== 'holding') beatBadge(c, n.beatInBar, p.x - size * .95, p.y - size * .95, s, n);
-    if (n.type === 'squeeze' && n.tail.state === 'waiting') beatBadge(c, n.beatInBar + n.durBeats, p.x + size + 21, p.y - size - 22, s, n, 'release');
+    text(c, label, p.x, p.y + r + 16, 12, due ? color : '#fff');
+    if (n.state !== 'holding') {
+      const label = beatName(n.beatInBar), fontSize = Math.max(18, Math.min(34, size * (label.length > 1 ? .68 : .95)));
+      c.save();
+      c.font = `900 ${fontSize}px Inter, Arial, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.strokeStyle = '#121426'; c.lineWidth = 4; c.lineJoin = 'round'; c.strokeText(label, p.x, p.y);
+      text(c, label, p.x, p.y, fontSize, '#fff', 900);
+      c.restore();
+    }
+    if (n.type === 'squeeze' && n.tail.state === 'waiting') beatBadge(c, n.beatInBar + n.durBeats, p.x + r + 24, p.y - r + 8, s, n, 'release');
   }
   c.restore();
 }
@@ -132,12 +139,13 @@ function drawSweep(c, n, s, r) {
   n.ticks.forEach((k, i) => {
     const p = toScreen(k.pos, s.w, s.h), next = n.ticks.find(t => t.state === 'waiting') === k;
     const fill = k.state === 'miss' ? '#ffffff30' : k.state !== 'waiting' ? color : next && Math.abs(s.time - k.time) < s.beat * .3 ? '#fff' : '#12142699';
-    circle(c, p.x, p.y, 15, fill); circle(c, p.x, p.y, 15, color, true, 3);
-    text(c, beatName(n.beatInBar + i), p.x, p.y + 1, 12, k.state !== 'waiting' && k.state !== 'miss' ? '#16172a' : '#fff', 800);
+    const dotR = sweepRadius(s.w, s.h);
+    circle(c, p.x, p.y, dotR, fill); circle(c, p.x, p.y, dotR, color, true, 3);
+    text(c, beatName(n.beatInBar + i), p.x, p.y + 1, Math.max(16, sweepRadius(s.w, s.h) * .85), fill === '#fff' || (k.state !== 'waiting' && k.state !== 'miss') ? '#16172a' : '#fff', 800);
   });
   const u = clamp((s.time - n.time) / n.duration, 0, 1), head = toScreen(pathPoint(n.path, u), s.w, s.h);
   const pulse = s.time < n.time ? 1 + Math.sin(s.now / 120) * .12 : 1;
-  circle(c, head.x, head.y, r * .45 * pulse, color + '55'); circle(c, head.x, head.y, r * .22, '#fff');
+  circle(c, head.x, head.y, r * .45 * pulse, color + '55', true, 3);
   const start = toScreen(n.ticks[0].pos, s.w, s.h);
   if (s.time < n.time) text(c, `SWEEP · START HERE`, start.x, start.y - 30, 12, '#fff');
 }
@@ -210,7 +218,7 @@ function roundRect(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcT
 // The creature that is being fed. It bobs on the beat, watches the next note, opens wide when
 // food is due, and chomps when a hit lands. Its color follows the GROOVE multiplier.
 function mouthCreature(c, s, P, next, chomp, sad) {
-  const R = P.width < 420 ? 24 : 30, x = s.w / 2, phase = s.running ? ((s.time / s.beat) % 1 + 1) % 1 : 0;
+  const R = s.h < 600 ? 18 : P.width < 420 ? 24 : 30, x = s.w / 2, phase = s.running ? ((s.time / s.beat) % 1 + 1) % 1 : 0;
   const bob = Math.exp(-phase * 7) * 5, y = P.y - R * .55 - bob;
   const color = GROOVE_COLORS[s.groove] || GROOVE_COLORS[1];
   const due = next ? clamp(1 - Math.abs(next.time - s.time) / (s.beat * .6), 0, 1) : 0;
@@ -271,7 +279,7 @@ function drawHands(c, s) {
 }
 
 export function drawRhythm(c, s) {
-  const r = targetRadius(s.w, s.h), P = panelRect(s.w, s.h, s.pointerMode);
+  const r = targetRadius(s.w, s.h), P = beatPanelRect(s.w, s.h, s.pointerMode);
   background(c, s);
   const ph = s.phrase, list = [];
   if (s.running) {
