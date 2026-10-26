@@ -157,6 +157,14 @@ function placeGesture(note, index) {
   return { x: (note.side === 'L' ? .2 : .8) + inward * z.x, y: .18 + z.y };
 }
 
+// Gesture style: position never counts, so the moves that are only about where your hand is become poses.
+// REACH becomes a GRAB on the same side; SWEEP becomes a SQUEEZE held for the same beats.
+export function gestureOnly(def) {
+  const pose = n => n.type === 'reach' ? { beat: n.beat, type: 'grab', side: n.side }
+    : n.type === 'sweep' ? { beat: n.beat, type: 'squeeze', side: n.side, dur: n.dur } : n;
+  return Array.isArray(def) ? def.map(pose) : { ...def, notes: def.notes.map(pose) };
+}
+
 let nextId = 0;
 // Turn one phrase definition into timed notes. `start` is the beat where the CALL bar begins.
 export function buildPhrase(def, start, beat, phraseIndex, options = {}) {

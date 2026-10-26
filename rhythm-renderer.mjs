@@ -1,7 +1,7 @@
 // Canvas drawing. Timing is read from the two-bar CALL / ECHO panel and from food shapes that
 // fill up as their beat approaches; there are no approach rings or scan lines.
-import { TYPES, clamp, toScreen, playField, targetRadius, sweepRadius, beatPanelRect } from './rhythm-core.mjs?v=20';
-import { pathPoint, BAR } from './rhythm-chart.mjs?v=20';
+import { TYPES, clamp, toScreen, playField, targetRadius, sweepRadius, beatPanelRect } from './rhythm-core.mjs?v=21';
+import { pathPoint, BAR } from './rhythm-chart.mjs?v=21';
 
 const TAU = Math.PI * 2;
 const GROOVE_COLORS = { 1: '#ff93c7', 2: '#ffb96e', 3: '#e5f57c', 4: '#5be7df' };
@@ -93,8 +93,8 @@ function drawNote(c, n, s, r) {
   if (n.type === 'sweep') drawSweep(c, n, s, r);
   else {
     const p = toScreen(n.pos, s.w, s.h), size = n.type === 'reach' ? r : r * .72 * (1 + bounce * .25);
-    // This fixed ring is the actual hit boundary. The shape can pulse inside it.
-    if (n.type !== 'clap' && n.type !== 'reach') {
+    // This fixed ring is the actual hit boundary. The shape can pulse inside it. Gesture style has no boundary.
+    if (n.type !== 'clap' && n.type !== 'reach' && !s.gestureStyle) {
       circle(c, p.x, p.y, r, color + '18');
       circle(c, p.x, p.y, r, color + 'cc', true, 2);
     }
@@ -237,7 +237,24 @@ function mouthCreature(c, s, P, next, chomp, sad) {
 }
 
 // --- effects ----------------------------------------------------------------------------------
+// Gesture style rewards every hit with a full-screen pulse: a shockwave, a burst of rays and a glow on the edges.
+function drawPulse(c, s, e, f) {
+  const color = TYPES[e.type].color, far = Math.hypot(s.w, s.h), k = ease(f), strong = e.grade === 'perfect' ? 1 : .6;
+  c.save();
+  const glow = c.createRadialGradient(s.w / 2, s.h / 2, Math.min(s.w, s.h) * .3, s.w / 2, s.h / 2, far * .6);
+  glow.addColorStop(0, color + '00'); glow.addColorStop(1, color + '66');
+  c.globalAlpha = (1 - f) * strong; c.fillStyle = glow; c.fillRect(0, 0, s.w, s.h);
+  c.globalAlpha = (1 - f) * .55 * strong; circle(c, e.x, e.y, 40 + k * far * .55, color, true, 2 + 16 * (1 - f));
+  c.globalAlpha = (1 - f) * .35 * strong; circle(c, e.x, e.y, 20 + ease(clamp(f * 1.5, 0, 1)) * far * .3, '#ffffff', true, 2 + 6 * (1 - f));
+  c.strokeStyle = color; c.lineCap = 'round'; c.lineWidth = 4 * (1 - f) + 1; c.globalAlpha = (1 - f) * .8;
+  for (let i = 0; i < 14; i++) {
+    const a = i / 14 * Math.PI * 2 + e.born / 700, r0 = 36 + k * 160, r1 = r0 + 50 * (1 - f) + 6;
+    c.beginPath(); c.moveTo(e.x + Math.cos(a) * r0, e.y + Math.sin(a) * r0); c.lineTo(e.x + Math.cos(a) * r1, e.y + Math.sin(a) * r1); c.stroke();
+  }
+  c.restore();
+}
 function drawEffects(c, s, mouth, r) {
+  if (s.motion) for (const e of s.effects) if (e.pulse) drawPulse(c, s, e, clamp((s.now - e.born) / 900, 0, 1));
   for (const e of s.effects) {
     const age = s.now - e.born, f = clamp(age / 900, 0, 1), color = TYPES[e.type].color;
     if (e.small) { if (e.grade !== 'miss') { circle(c, e.x, e.y, 15 + f * 22, color, true, 3 * (1 - f)); text(c, e.label, e.x, e.y - 24 - f * 20, 12, color); } continue; }

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { ClapGesture } from '../hand-input.mjs';
 import { setPlayLayout, targetRadius, sweepRadius, toScreen, beatPanelRect, segmentCircleInterval, timingGrade, onSide, LEVELS } from '../rhythm-core.mjs';
-import { buildPhrase, SONGS } from '../rhythm-chart.mjs';
+import { buildPhrase, SONGS, gestureOnly } from '../rhythm-chart.mjs';
 import { Tutorial } from '../tutorial.mjs';
 
 let checks = 0;
@@ -40,7 +40,7 @@ const source=fs.readFileSync(new URL('../game.js',import.meta.url),'utf8');
 const grades=[];
 const c=vm.createContext({running:true,paused:false,cameraMode:true,w:1280,h:800,notes:[],
  targetRadius,sweepRadius,toScreen,segmentCircleInterval,timingGrade,onSide,
- judgeTime:t=>t,win:()=>({perfect:.11,good:.24}),lag:()=>0,
+ judgeTime:t=>t,win:()=>({perfect:.11,good:.24}),lag:()=>0,gestureStyle:()=>false,
  award:(n,grade)=>grades.push(grade),feedback(){},performance:{now:()=>0},
  fail:n=>n.state='miss',score:{add:grade=>(grades.push(grade),100),drain:()=>1},
  sound:{confirmSound(){}},effects:[],pxOf:pos=>toScreen(pos,1280,800),updateHud(){},burst(){},practice:true});
@@ -123,5 +123,30 @@ test('every tutorial move has a separate demonstration before player attempts',(
  assert.equal(t.lesson.id,'aim');assert.equal(t.next().options.demo,true);
  t.report(1,true,null,null,true);assert.equal(t.passes,0);assert.equal(t.next().options.demo,false);
  t.report(1,true);t.report(1,true);assert.equal(t.lesson.id,'grab');assert.equal(t.next().options.demo,true);
+});
+test('gesture style ignores position for Grab and Flip, but still judges timing and direction',()=>{
+ c.gestureStyle=()=>true;
+ try{
+  const g=note();c.notes=[g];const p=point(g);
+  assert.equal(c.act('fist',{...p,x:.02,y:.98},1.5),false);assert.equal(g.state,'waiting');
+  assert.equal(c.act('fist',{...p,x:.02,y:.98},1),true);assert.equal(g.state,'hit');
+  const f=note('flip');c.notes=[f];const far={...p,x:.05,y:.9};
+  const path=[{...far,time:.94},{...far,x:.2,time:1.06}];
+  assert.equal(c.act('flip',{...far,path},1,'left'),false);
+  assert.equal(c.act('flip',{...far,path},1,'right'),true);assert.equal(f.state,'hit');
+ }finally{c.gestureStyle=()=>false;}
+});
+test('gestureOnly turns position moves into poses on every level',()=>{
+ for(const [level,defs] of Object.entries(SONGS))for(const def of defs){
+  const out=gestureOnly(def),notes=Array.isArray(out)?out:out.notes,src=Array.isArray(def)?def:def.notes;
+  assert.ok(notes.every(n=>n.type!=='reach'&&n.type!=='sweep'),level);
+  assert.equal(notes.length,src.length,level);
+  src.forEach((n,i)=>{if(n.type==='sweep'){assert.equal(notes[i].type,'squeeze');assert.equal(notes[i].dur,n.dur);}});
+ }
+});
+test('gesture tutorial skips the aiming lessons and never mentions circles',()=>{
+ const t=new Tutorial({camera:true,gesture:true});
+ assert.ok(!t.lessons.some(l=>['aim','reach','sweep'].includes(l.id)));
+ for(const l of t.lessons)assert.ok(!/\b(circle|ring)s?\b/i.test([l.text,...l.steps].join(' ')),l.id);
 });
 console.log(`${checks} regression checks passed.`);

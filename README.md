@@ -30,6 +30,8 @@ Each phrase has two bars: **CALL** (listen) and **ECHO** (repeat). The number on
 
 The fixed circles show the actual hit areas for GRAB, REACH, SQUEEZE, and FLIP. SWEEP uses a separate outlined circle for each path point. CLAP works anywhere in camera view, including fast claps starting from opposite sides. For FLIP, the trajectory must cross the target on its numbered beat; you do not need to start inside.
 
+**Gesture style:** choose STYLE → Gesture on the start screen to play without aiming. Only the move and its timing count: there are no circles, either hand works, REACH becomes GRAB, SWEEP becomes SQUEEZE, and every hit sets off a full-screen pulse. Standard and Gesture keep separate best scores.
+
 In keyboard mode, X performs a GRAB with your “other hand” for sections where one hand must GRAB while the other holds a SQUEEZE.
 
 REACH (touch) and SWEEP (slide) targets always award Perfect when touched within their active window; untouched targets still count as Miss. These gestures do not receive timing-based Good grades.

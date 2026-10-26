@@ -57,8 +57,8 @@ body:not(.playing) .topline,body:not(.playing) #feedback,body:not(.playing) .pla
 .lesson-actions .pill-button{padding:6px 12px;font-size:11px}
 
 /* Launch overlay */
-.launch-overlay{position:absolute;inset:0;z-index:5;display:flex;align-items:center;padding:96px max(7vw,32px) 64px;overflow:hidden auto;background:linear-gradient(90deg,#121426f2,#121426d0 60%,#12142660)}
-.launch-panel{position:relative;z-index:1;max-width:680px;width:60%}
+.launch-overlay{position:absolute;inset:0;z-index:5;display:flex;align-items:flex-start;padding:96px max(7vw,32px) 64px;overflow:hidden auto;background:linear-gradient(90deg,#121426f2,#121426d0 60%,#12142660)}
+.launch-panel{position:relative;z-index:1;max-width:680px;width:60%;margin-block:auto} /* auto margins centre it without clipping the top when it is taller than the screen */
 .eyebrow{font-size:9px;font-weight:600;letter-spacing:2.2px;color:var(--grab);display:flex;align-items:center;gap:9px;margin:0 0 20px}
 .eyebrow>span:first-child{width:5px;height:5px;background:currentColor;border-radius:50%}
 .eyebrow .edition{color:#9d93b3;margin-left:16px;white-space:nowrap}
@@ -227,3 +227,5 @@ input[type=range]{width:100%;accent-color:var(--grab)}
   .lesson-copy p,.lesson-copy li{font-size:11px}
   .lesson-copy{grid-template-columns:1fr 2fr;gap:12px}
 }
+/* Gesture style has no position-only moves */
+body.gesture-style .intro-gestures [data-type="reach"],body.gesture-style .intro-gestures [data-type="sweep"]{display:none}

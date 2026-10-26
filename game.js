@@ -1,12 +1,12 @@
-import { TYPES, LEVELS, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=20';
-import { buildPhrase, songSource, lintSong, BAR, LEAD_IN } from './rhythm-chart.mjs?v=20';
-import { Score, bestFor, saveBest, MAX_ENERGY, GROOVE } from './scoring.mjs?v=20';
-import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=20';
-import * as sound from './audio.mjs?v=20';
-import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=20';
-import { CameraController } from './camera-controller.mjs?v=20';
-import { WorkerHandTracker } from './hand-worker-client.mjs?v=20';
-import { drawRhythm } from './rhythm-renderer.mjs?v=20';
+import { TYPES, LEVELS, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=21';
+import { buildPhrase, songSource, lintSong, gestureOnly, BAR, LEAD_IN } from './rhythm-chart.mjs?v=21';
+import { Score, bestFor, saveBest, MAX_ENERGY, GROOVE } from './scoring.mjs?v=21';
+import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=21';
+import * as sound from './audio.mjs?v=21';
+import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=21';
+import { CameraController } from './camera-controller.mjs?v=21';
+import { WorkerHandTracker } from './hand-worker-client.mjs?v=21';
+import { drawRhythm } from './rhythm-renderer.mjs?v=21';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const $ = id => document.getElementById(id), canvas = $('game'), ctx = canvas.getContext('2d');
@@ -44,14 +44,17 @@ const judgeTime = (t = songTime()) => t - outLatency() - offset();
 const win = () => cameraMode ? WINDOWS.camera : WINDOWS.pointer;
 const lag = type => cameraMode ? GESTURE_LAG[type] || 0 : 0;
 const motion = () => $('motion').checked;
+// Gesture style: only the move and its timing are judged, never where the hand is.
+const gestureStyle = () => $('style').value === 'gesture';
+const bestKey = () => (cameraMode || inputMode === 'camera' ? 'camera' : 'pointer') + (gestureStyle() ? '-gesture' : '');
 
 // --- phrases ------------------------------------------------------------------------------------
 function appendPhrase() {
   const item = source.next();
   if (!item) { sourceDone = true; return false; }
   const start = phrases.length ? phrases.at(-1).end : LEAD_IN;
-  const sides = mode === 'tutorial' ? item.options.sides : level.sides;
-  const ph = buildPhrase(item.def, start, beat, phrases.length, { ...item.options, sides: cameraMode && sides });
+  const sides = mode === 'tutorial' ? item.options.sides : level.sides, def = gestureStyle() ? gestureOnly(item.def) : item.def;
+  const ph = buildPhrase(def, start, beat, phrases.length, { ...item.options, sides: cameraMode && sides && !gestureStyle() });
   ph.lesson = item.lesson; ph.demo = !!item.options.demo;
   phrases.push(ph); notes.push(...ph.notes); totalBeats = ph.end;
   return true;
@@ -102,7 +105,7 @@ function notePixel(n, time) {
 }
 function burst(n, grade, label, points = 0, at = null) {
   const p = at || notePixel(n);
-  effects.push({ type: n.type, grade, label, points, x: p.x, y: p.y, born: performance.now() });
+  effects.push({ type: n.type, grade, label, points, x: p.x, y: p.y, born: performance.now(), pulse: gestureStyle() && grade !== 'miss' });
   effects = effects.slice(-14);
 }
 function award(n, grade, delta, label = null) {
@@ -118,7 +121,7 @@ function fail(n, reason) {
   award(n, 'miss', null, n.type === 'squeeze' && n.tail ? 'MISS' : 'MISS');
   if (n.demo) return;
   if (score.drain() <= 0 && !practice) end('failed');
-  const hint = hintFor(reason, n.type);
+  const hint = hintFor(reason, n.type, gestureStyle());
   if (hint && mode === 'song' && level === LEVELS.easy) feedback('MISS · ' + hint, 'miss');
 }
 
@@ -132,8 +135,8 @@ function act(kind, point, eventTime, dir = null) {
   const base = judgeTime(eventTime), wnd = win().good, radius = targetRadius(w, h);
   const near = notes.filter(n => n.state === 'waiting' && !n.demo && types.includes(n.type) && Math.abs(base - n.time) < .8);
   const events = near.map(n => {
-    if (n.type === 'flip' && point.path) return { n, event: flipContact(n, point.path, point.handId) };
-    const spatial = n.type === 'clap' || (point.visible && distPx(point, n.pos) <= radius);
+    if (n.type === 'flip' && point.path && !gestureStyle()) return { n, event: flipContact(n, point.path, point.handId) };
+    const spatial = gestureStyle() || n.type === 'clap' || (point.visible && distPx(point, n.pos) <= radius);
     return { n, event: spatial ? { delta: base - lag(n.type) - n.time, point } : null };
   });
   const sideOk = (n, p) => !cameraMode || n.side === 'A' || n.side === 'B' || onSide(n.side, p.x);
@@ -156,8 +159,8 @@ function act(kind, point, eventTime, dir = null) {
     award(hit, grade, delta, grade === 'perfect' ? 'SQUEEZE!' : 'SQUEEZE');
   } else {
     hit.state = 'hit'; award(hit, grade, delta);
-    // A key press only covers additional notes whose circles also contain the pointer.
-    if (!cameraMode) for (const n of near) if (n !== hit && n.type === hit.type && Math.abs(n.time - hit.time) < 1e-3 && point.visible && distPx(point, n.pos) <= radius) { n.state = 'hit'; award(n, grade, delta); }
+    // A key press only covers additional notes whose circles also contain the pointer (any of them in gesture style).
+    if (!cameraMode) for (const n of near) if (n !== hit && n.type === hit.type && Math.abs(n.time - hit.time) < 1e-3 && (gestureStyle() || point.visible && distPx(point, n.pos) <= radius)) { n.state = 'hit'; award(n, grade, delta); }
   }
   return true;
 }
@@ -284,7 +287,7 @@ async function start({ isPractice = false, isTutorial = false } = {}) {
   mode = isTutorial ? 'tutorial' : 'song'; levelKey = $('difficulty').value; level = LEVELS[levelKey] || LEVELS.normal;
   practice = isPractice || isTutorial;
   beat = 60 / (isTutorial ? TUTORIAL_BPM : Number($('bpm').value));
-  tutorial = isTutorial ? new Tutorial({ camera: cameraMode }) : null;
+  tutorial = isTutorial ? new Tutorial({ camera: cameraMode, gesture: gestureStyle() }) : null;
   source = isTutorial ? tutorial : songSource(levelKey, Number($('bpm').value));
   songPhrases = isTutorial ? 0 : source.total;
   score = new Score({ practice }); phrases = []; notes = []; sourceDone = false; totalBeats = LEAD_IN + BAR * 2; effects = []; lessonMessage = null;
@@ -292,7 +295,7 @@ async function start({ isPractice = false, isTutorial = false } = {}) {
   running = true; paused = false; startTime = audioNow() + .4; nextStep = 0;
   fillPhrases();
   for (const id of ['overlay', 'summary', 'help-panel', 'settings-panel']) $(id).hidden = true;
-  for (const id of ['difficulty', 'bpm', 'offset', 'input-mode']) $(id).disabled = true;
+  for (const id of ['difficulty', 'style', 'bpm', 'offset', 'input-mode']) $(id).disabled = true;
   $('stop').disabled = false; document.body.classList.add('playing'); document.body.classList.toggle('tutorial', isTutorial);
   scheduleMusic(); scheduler = setInterval(scheduleMusic, 25); canvas.focus(); updateHud(); updateLesson();
   feedback(isTutorial ? 'LISTEN TO THE CALL' : 'LISTEN · THEN ECHO');
@@ -302,7 +305,7 @@ function end(reason = 'finished') {
   if (!running) return;
   running = false; paused = false; stopMusic(); padHeld = {};
   document.body.classList.remove('playing', 'tutorial');
-  for (const id of ['difficulty', 'bpm', 'offset', 'input-mode']) $(id).disabled = false;
+  for (const id of ['difficulty', 'style', 'bpm', 'offset', 'input-mode']) $(id).disabled = false;
   $('stop').disabled = true;
   $('overlay').hidden = false; document.querySelector('.intro-content').hidden = true; $('summary').hidden = false;
   if (reason === 'tutorial' || mode === 'tutorial') return showTutorialEnd(reason);
@@ -322,8 +325,8 @@ function showTutorialEnd(reason) {
 
 const TYPE_ORDER = ['grab', 'reach', 'squeeze', 'clap', 'flip', 'sweep'];
 function showSummary(reason) {
-  const r = score.result(), input = cameraMode ? 'camera' : 'pointer';
-  const isBest = !practice && reason === 'finished' && saveBest(levelKey, input, r);
+  const r = score.result();
+  const isBest = !practice && reason === 'finished' && saveBest(levelKey, bestKey(), r);
   const title = practice ? 'Practice run' : reason === 'stopped' ? 'Run ended' : reason === 'failed' ? 'Out of energy' : r.cleared ? 'Track cleared' : 'Not quite';
   const bars = TYPE_ORDER.filter(t => r.byType[t]).map(t => {
     const c = r.byType[t], total = c.perfect + c.good + c.miss, acc = (c.perfect + c.good * .5) / total;
@@ -331,7 +334,7 @@ function showSummary(reason) {
   }).join('');
   const advice = r.advice && r.advice.apply ? `<div class="advice"><p>Your moves landed <b>${Math.abs(r.advice.ms)} ms ${r.advice.ms > 0 ? 'late' : 'early'}</b> on average.</p><button class="pill-button" id="apply-offset" data-ms="${r.advice.apply}">Apply ${r.advice.apply > 0 ? '+' : ''}${r.advice.apply} ms calibration</button></div>`
     : r.advice ? `<div class="advice"><p>Timing is centred (${r.advice.ms >= 0 ? '+' : ''}${r.advice.ms} ms). Calibration looks right.</p></div>` : '';
-  $('summary').innerHTML = `<p class="eyebrow">${levelKey === 'easy' ? 'INTRO' : level.name} · ${title.toUpperCase()}${isBest ? ' · NEW BEST' : ''}</p>
+  $('summary').innerHTML = `<p class="eyebrow">${levelKey === 'easy' ? 'INTRO' : level.name}${gestureStyle() ? ' · GESTURE' : ''} · ${title.toUpperCase()}${isBest ? ' · NEW BEST' : ''}</p>
     <div class="result-head"><div class="rank" data-rank="${r.rank}">${r.rank}</div><div><div class="result-score">${String(r.points).padStart(6, '0')}</div>
     <p class="summary-lead">Accuracy ${(r.accuracy * 100).toFixed(1)}% · Best combo ${r.maxCombo}${r.cleared ? '' : ' · clear needs 60% and energy left'}</p></div></div>
     <div class="judge-row"><span>PERFECT <b>${r.counts.perfect}</b></span><span>GOOD <b>${r.counts.good}</b></span><span>MISS <b>${r.counts.miss}</b></span></div>
@@ -490,7 +493,8 @@ function resume() {
 function panel(id, show) { if (show) { pause(); $(id).hidden = false; } else { $(id).hidden = true; resume(); } }
 function setDifficulty() { const l = LEVELS[$('difficulty').value] || LEVELS.normal; $('bpm').value = l.bpm; refreshLaunch(); }
 function refreshLaunch() {
-  const l = LEVELS[$('difficulty').value] || LEVELS.normal, best = bestFor($('difficulty').value, inputMode === 'camera' ? 'camera' : 'pointer');
+  const l = LEVELS[$('difficulty').value] || LEVELS.normal, best = bestFor($('difficulty').value, bestKey());
+  $('style-description').textContent = gestureStyle() ? 'No aiming: make the move on the beat with either hand, anywhere in view.' : 'Aim each move inside its circle; from FLOW up, each side belongs to its hand.';
   $('difficulty-description').textContent = l.description + (best ? ` · BEST ${best.rank} ${String(best.points).padStart(6, '0')}` : '');
   const fresh = !tutorialDone();
   document.body.classList.toggle('first-run', fresh);
@@ -500,6 +504,10 @@ function saveOffset() { try { localStorage.setItem(OFFSET_KEY, $('offset').value
 try { const v = localStorage.getItem(OFFSET_KEY); if (v != null) { $('offset').value = v; $('offset-value').textContent = v + ' ms'; } } catch {}
 
 $('difficulty').onchange = setDifficulty;
+const STYLE_KEY = 'ftb.style';
+try { const v = localStorage.getItem(STYLE_KEY); if (v === 'gesture' || v === 'standard') $('style').value = v; } catch {}
+$('style').onchange = () => { try { localStorage.setItem(STYLE_KEY, $('style').value); } catch {} document.body.classList.toggle('gesture-style', gestureStyle()); refreshLaunch(); };
+document.body.classList.toggle('gesture-style', gestureStyle());
 $('input-mode').onchange = () => { $('input-mode').value === 'camera' ? connectCamera() : stopCamera(); };
 $('start').onclick = () => start();
 $('practice').onclick = () => start({ isPractice: true });
@@ -527,7 +535,8 @@ function draw(now) {
   const hands = cameraMode ? cameraHands.filter(p => now - p.seen < 350).map(hd => handPoint(responsiveCursor(hd, now, $('cursor-response').checked))) : [pointer];
   drawRhythm(ctx, {
     w, h, time: vt, judgeOffset: offset(), now, beat, effects, notes, phrase: ph, nextPhrase: ph ? phrases[ph.index + 1] : null,
-    running, motion: motion(), hands, cameraMode, groove: score.groove, combo: score.combo, sidesOn: cameraMode && (mode === 'tutorial' ? !!tutorial?.lesson?.sides : level.sides),
+    running, motion: motion(), hands, cameraMode, groove: score.groove, combo: score.combo, gestureStyle: gestureStyle(),
+    sidesOn: cameraMode && !gestureStyle() && (mode === 'tutorial' ? !!tutorial?.lesson?.sides : level.sides),
     videoReady: camera.stream && $('video').readyState >= 2, pointerMode: !cameraMode, leadIn: LEAD_IN * beat
   });
   if (now - lastUi > 100) {
