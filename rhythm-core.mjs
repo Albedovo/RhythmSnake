@@ -1,12 +1,12 @@
 // Note types, timing rules and hand features shared by the game, the chart and the tests.
 
 export const TYPES = {
-  grab:    { label: 'GRAB',    hint: 'Open hand, then fist on the beat', color: '#5be7df', glyph: '●', key: 'Z' },
-  reach:   { label: 'REACH',   hint: 'Touch inside the ring for Perfect', color: '#ffb96e', glyph: '◎', key: 'MOVE' },
-  squeeze: { label: 'SQUEEZE', hint: 'Fist on the beat, open on the last beat', color: '#e5f57c', glyph: '■', key: 'HOLD Z' },
-  clap:    { label: 'CLAP',    hint: 'Bring both hands together, anywhere', color: '#ff93c7', glyph: '◆', key: 'SPACE' },
-  flip:    { label: 'FLIP',    hint: 'Swipe an open palm the arrow way', color: '#b9a5ff', glyph: '▲', key: '← →' },
-  sweep:   { label: 'SWEEP',   hint: 'Touch each numbered circle for Perfect', color: '#ff8a65', glyph: '〰', key: 'MOVE' }
+  grab:    { label: 'GRAB',    hint: 'Open hand, then fist on the beat', color: '#31d7f0', glyph: '●', key: 'Z' },
+  reach:   { label: 'REACH',   hint: 'Touch inside the ring for Perfect', color: '#ff9f2e', glyph: '◎', key: 'MOVE' },
+  squeeze: { label: 'SQUEEZE', hint: 'Fist on the beat, open on the last beat', color: '#ffe14a', glyph: '■', key: 'HOLD Z' },
+  clap:    { label: 'CLAP',    hint: 'Bring both hands together, anywhere', color: '#ff4f9a', glyph: '◆', key: 'SPACE' },
+  flip:    { label: 'FLIP',    hint: 'Swipe an open palm the arrow way', color: '#7a5cff', glyph: '▲', key: '← →' },
+  sweep:   { label: 'SWEEP',   hint: 'Touch each numbered circle for Perfect', color: '#5fd068', glyph: '〰', key: 'MOVE' }
 };
 
 export const LEVELS = {
