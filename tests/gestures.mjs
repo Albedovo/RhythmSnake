@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import { ClapGesture } from '../hand-input.mjs';
 import { setPlayLayout, targetRadius, sweepRadius, toScreen, beatPanelRect, segmentCircleInterval, timingGrade, onSide } from '../rhythm-core.mjs';
-import { buildPhrase, SONGS, TRACKS, lintSong, mirror } from '../rhythm-chart.mjs';
+import { buildPhrase, SONGS, TRACKS, lintSong, mirror, samplePath, pathPoint } from '../rhythm-chart.mjs';
+import { LESSONS } from '../tutorial.mjs';
 import { Tutorial } from '../tutorial.mjs';
 
 let checks = 0;
@@ -130,6 +131,16 @@ test('every chart passes the lint: comfortable same-hand gaps, claps on their ow
 test('long sweeps only appear in HARD and EXPERT charts',()=>{
  for(const [key,defs] of Object.entries(SONGS))if(/\/(easy|normal)$/.test(key))for(const def of defs)for(const n of Array.isArray(def)?def:def.notes)
   assert.ok(n.type!=='sweep'||!/rainbow|scoop/.test(n.path),`${key}: ${n.path}`);
+});
+test('sweep dots stay clearly apart in songs and in the tutorial, which has less room',()=>{
+ const sweeps=[...Object.values(SONGS).flat().flatMap(d=>Array.isArray(d)?d:d.notes).map(n=>[n,300]),...LESSONS.flatMap(l=>l.phrase).map(n=>[n,330])].filter(([n])=>n.type==='sweep');
+ for(const [n,top] of sweeps){setPlayLayout({top,toolbarTop:720});const path=samplePath(n.path);
+  const pts=Array.from({length:n.dur+1},(_,k)=>toScreen(pathPoint(path,k/n.dur),1280,800));
+  for(let k=1;k<pts.length;k++)assert.ok(Math.hypot(pts[k].x-pts[k-1].x,pts[k].y-pts[k-1].y)>=2.4*sweepRadius(1280,800),`${n.path}: dots ${k-1}-${k} too close`);}
+});
+test('off-beats only appear in HARD and EXPERT charts',()=>{
+ for(const [key,defs] of Object.entries(SONGS))if(/\/(easy|normal)$/.test(key))for(const def of defs)for(const n of Array.isArray(def)?def:def.notes)
+  assert.ok(Number.isInteger(n.beat),`${key}: ${n.type}@${n.beat}`);
 });
 test('mirror swaps hands, spots, paths and flip direction',()=>{
  const [g,r,s,f]=mirror([{type:'grab',side:'L',beat:0},{type:'reach',side:'L',at:'hiL',beat:1},{type:'sweep',side:'L',path:'riseL',beat:2},{type:'flip',side:'L',dir:'left',beat:3}]);

@@ -17,6 +17,7 @@ const ring = (x, y, r, c, dash = true) => `<circle cx="${x}" cy="${y}" r="${r}" 
 const arrow = (x1, x2, y, c) => { const d = x2 > x1 ? -7 : 7; return `<path d="M${x1} ${y}H${x2}M${x2 + d} ${y - 6}L${x2} ${y}L${x2 + d} ${y + 6}" stroke="${c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`; };
 const key = (x, y, w, label, down, c = '#fff') => `<g transform="translate(0 ${down ? 3 : 0})"><rect x="${x + 3}" y="${y + 3}" width="${w}" height="26" rx="6" fill="${INK}" opacity="${down ? 0 : 1}"/><rect x="${x}" y="${y}" width="${w}" height="26" rx="6" fill="${down ? c : '#fff'}" ${line}/><text x="${x + w / 2}" y="${y + 18}" text-anchor="middle" font-family="DM Mono, monospace" font-size="13" font-weight="500" fill="${INK}">${label}</text></g>`;
 const cursor = (x, y) => `<path d="M${x} ${y}l0 20l5 -5l4 9l4 -2l-4 -9l7 0z" fill="#fff" ${line}/>`;
+const badge = (x, label, fill, w = 34) => `<rect x="${x - w / 2 + 3}" y="23" width="${w}" height="30" rx="15" fill="${INK}"/><rect x="${x - w / 2}" y="20" width="${w}" height="30" rx="15" fill="${fill}" ${line}/><text x="${x}" y="40" text-anchor="middle" font-family="DM Sans, sans-serif" font-weight="800" font-size="15" fill="${INK}">${label}</text>`;
 const frames = (a, b, shared = '') => `<svg viewBox="0 0 96 72" xmlns="http://www.w3.org/2000/svg">${shared}<g class="fa">${a}</g><g class="fb">${b}</g></svg>`;
 
 const CAMERA = {
@@ -33,6 +34,9 @@ const CAMERA = {
   'flip-left': () => frames(openHand(70, 44) + arrow(50, 14, 14, COLOR.purple), openHand(26, 44) + `<path d="M48 30h18M52 44h18M48 58h18" stroke="${COLOR.purple}" stroke-width="3" stroke-linecap="round"/>`),
   sweep: () => frames(openHand(20, 58, '#fff', .7), openHand(76, 28, '#fff', .7),
     `<path d="M14 62Q40 58 48 40T82 14" fill="none" stroke="${COLOR.green}" stroke-width="5" stroke-dasharray="2 8" stroke-linecap="round"/>` + [[14, 62], [48, 40], [82, 14]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="6" fill="${COLOR.green}" ${line}/>`).join('')),
+  // The count 1, 2, 3 with the "&" between 2 and 3 lighting up: the beat badge players see on off-beat notes.
+  offbeat: () => frames(badge(20, '2', COLOR.yellow) + badge(48, '&', '#fff', 30) + badge(76, '3', '#fff'), badge(20, '2', '#fff') + badge(48, '2 &', COLOR.orange, 40) + badge(76, '3', '#fff'),
+    `<text x="48" y="66" text-anchor="middle" font-family="DM Mono, monospace" font-size="10" fill="${INK}">OFF-BEAT</text>`),
   sides: () => frames(fist(26, 40, COLOR.cyan) + openHand(70, 42, COLOR.pink), openHand(26, 42, COLOR.cyan) + fist(70, 40, COLOR.pink),
     `<path d="M48 6v60" stroke="${INK}" stroke-width="2" stroke-dasharray="4 5"/>`)
 };
@@ -41,6 +45,7 @@ const KEYS = {
   aim: () => frames(cursor(20, 34), cursor(56, 26), ring(64, 38, 20, COLOR.orange)),
   reach: () => frames(cursor(18, 34), cursor(58, 28), ring(66, 38, 20, COLOR.orange)),
   sweep: CAMERA.sweep,
+  offbeat: CAMERA.offbeat,
   grab: () => frames(key(34, 24, 28, 'Z', false), key(34, 24, 28, 'Z', true, COLOR.cyan)),
   squeeze: () => frames(key(34, 24, 28, 'Z', true, COLOR.yellow) + `<text x="48" y="66" text-anchor="middle" font-family="DM Mono, monospace" font-size="10" fill="${INK}">HOLD</text>`, key(34, 24, 28, 'Z', false)),
   clap: () => frames(key(14, 24, 68, 'SPACE', false), key(14, 24, 68, 'SPACE', true, COLOR.pink)),

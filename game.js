@@ -1,13 +1,13 @@
-import { TYPES, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=25';
-import { buildPhrase, songSource, lintSong, TRACKS, DIFFICULTIES, SONGS, chartFor, BAR, LEAD_IN } from './rhythm-chart.mjs?v=25';
-import { Score, bestFor, saveBest, GROOVE } from './scoring.mjs?v=25';
-import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=25';
-import * as sound from './audio.mjs?v=25';
-import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=25';
-import { CameraController } from './camera-controller.mjs?v=25';
-import { WorkerHandTracker } from './hand-worker-client.mjs?v=25';
-import { drawRhythm } from './rhythm-renderer.mjs?v=25';
-import { lessonIcon } from './lesson-icons.mjs?v=25';
+import { TYPES, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=26';
+import { buildPhrase, songSource, lintSong, TRACKS, DIFFICULTIES, SONGS, chartFor, BAR, LEAD_IN } from './rhythm-chart.mjs?v=26';
+import { Score, bestFor, saveBest, GROOVE } from './scoring.mjs?v=26';
+import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=26';
+import * as sound from './audio.mjs?v=26';
+import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=26';
+import { CameraController } from './camera-controller.mjs?v=26';
+import { WorkerHandTracker } from './hand-worker-client.mjs?v=26';
+import { drawRhythm } from './rhythm-renderer.mjs?v=26';
+import { lessonIcon } from './lesson-icons.mjs?v=26';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const $ = id => document.getElementById(id), canvas = $('game'), ctx = canvas.getContext('2d');
@@ -372,6 +372,7 @@ function updateLesson() {
     $('lesson-title').textContent = l.title;
     $('lesson-cue').textContent = !cameraMode && l.keyCue ? l.keyCue : l.cue;
     $('lesson-icon').innerHTML = lessonIcon(l.icon, !cameraMode);
+    $('lesson-tag').textContent = l.tag || ''; $('lesson-tag').hidden = !l.tag;
   }
   $('lesson-icon').style.setProperty('--beat', `${beat}s`);
   const ph = phraseAt(visualTime()), elapsed = ph ? (visualTime() - ph.callAt) / beat : -1;

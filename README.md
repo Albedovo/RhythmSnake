@@ -38,7 +38,7 @@ REACH (touch) and SWEEP (slide) targets always award Perfect when touched within
 
 **Scoring:** Perfect 100 / Good 50 / Miss 0, multiplied by your GROOVE multiplier (10-note combo ×2, 25-note combo ×3, 50-note combo ×4). Grades: S ≥95%, A ≥88%, B ≥75%, C ≥60%. Every run plays to the end and is settled on its final score; a clear needs at least 60% accuracy. The results screen suggests a latency calibration adjustment based on your average timing offset.
 
-**Tracks:** three songs, each with its own groove and four charts — SNACK ATTACK (100 BPM, Lv 1/4/7/10), GROOVE KITCHEN (116 BPM, Lv 2/5/8/11) and SUGAR RUSH (128 BPM, Lv 3/6/9/12). EASY lets either hand play anything; from NORMAL up each side belongs to its hand; long sweeps only appear in HARD and EXPERT.
+**Tracks:** three songs, each with its own groove and four charts — SNACK ATTACK (100 BPM, Lv 1/4/7/10), GROOVE KITCHEN (116 BPM, Lv 2/5/8/11) and SUGAR RUSH (128 BPM, Lv 3/6/9/12). EASY lets either hand play anything; from NORMAL up each side belongs to its hand; off-beats (notes on the “&” between counts) and long sweeps only appear in HARD and EXPERT. The tutorial's last lesson teaches off-beats and is marked HARD+ ONLY.
 
 ## Run Locally
 

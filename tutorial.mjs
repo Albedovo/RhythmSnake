@@ -1,6 +1,6 @@
 // Interactive tutorial: each lesson loops one short phrase until the player lands it enough times.
 // A rest bar follows every attempt so feedback can be read before the next call.
-import { grab, reach, squeeze, clap, flip, sweep } from './rhythm-chart.mjs?v=25';
+import { grab, reach, squeeze, clap, flip, sweep } from './rhythm-chart.mjs?v=26';
 
 export const TUTORIAL_BPM = 90;
 
@@ -25,10 +25,13 @@ export const LESSONS = [
     cue: 'Swipe right through the circle', keyCue: 'In the circle, press →' },
   { id: 'flip-left', title: 'FLIP ←', icon: 'flip-left', need: 2, phrase: [flip(0, 'L')],
     cue: 'Swipe left through the circle', keyCue: 'In the circle, press ←' },
-  { id: 'sweep', title: 'SWEEP', icon: 'sweep', need: 2, phrase: [sweep(0, 'riseL', 2)],
+  { id: 'sweep', title: 'SWEEP', icon: 'sweep', need: 2, phrase: [sweep(0, 'riseL', 3)],
     cue: 'Follow the dots, one per beat', keyCue: 'Move through each dot' },
   { id: 'sides', title: 'Two hands', icon: 'sides', need: 2, sides: true, cameraOnly: true, phrase: [grab(0, 'L'), grab(2, 'R')],
-    cue: 'Left side = left hand' }
+    cue: 'Left side = left hand' },
+  // Off-beats land on the "&" halfway between two counts. Claps keep the lesson about timing, not aiming.
+  { id: 'offbeat', title: 'OFF-BEAT', tag: 'HARD+ ONLY', icon: 'offbeat', need: 2, phrase: [clap(0), clap(1.5)],
+    cue: 'Clap on 1, then on “2 &”', keyCue: 'Space on 1, then on “2 &”' }
 ];
 
 // Hints are a few words, shown next to an icon; the move's own cue covers the rest.

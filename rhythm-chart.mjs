@@ -12,13 +12,15 @@ export const SPOTS = {
   hiL: { x: .2, y: .12 }, hiR: { x: .8, y: .12 }, top: { x: .5, y: .04 },
   wideL: { x: .02, y: .45 }, wideR: { x: .98, y: .45 },
   midL: { x: .34, y: .45 }, midR: { x: .66, y: .45 },
-  loL: { x: .2, y: .9 }, loR: { x: .8, y: .9 }
+  loL: { x: .2, y: .9 }, loR: { x: .8, y: .9 },
+  inLoL: { x: .42, y: .92 }, inLoR: { x: .58, y: .92 }, outHiL: { x: .06, y: .1 }, outHiR: { x: .94, y: .1 }
 };
 
 // Sweep paths are smooth curves through these spots. `side` says which hand is expected.
 export const PATHS = {
-  riseL: { side: 'L', via: ['loL', 'L', 'hiL'] },
-  riseR: { side: 'R', via: ['loR', 'R', 'hiR'] },
+  // Rises go up and outwards: the play field is wide and short, so a straight climb would bunch its dots together.
+  riseL: { side: 'L', via: ['inLoL', 'L', 'outHiL'] },
+  riseR: { side: 'R', via: ['inLoR', 'R', 'outHiR'] },
   dropL: { side: 'L', via: ['hiL', 'midL', 'loL'] },
   dropR: { side: 'R', via: ['hiR', 'midR', 'loR'] },
   rainbow: { side: 'B', via: ['wideL', 'hiL', 'top', 'hiR', 'wideR'] },
@@ -48,7 +50,7 @@ export function mirror(def) {
 }
 
 // Difficulty tiers shared by every track. EASY lets either hand play anything; from NORMAL up,
-// notes on the left half belong to the left hand. Long sweeps (rainbow, scoop) only appear in HARD and EXPERT.
+// notes on the left half belong to the left hand. Off-beats (“&”) and long sweeps (rainbow, scoop) only appear in HARD and EXPERT.
 export const DIFFICULTIES = {
   easy:   { name: 'EASY',   sides: false, hints: true },
   normal: { name: 'NORMAL', sides: true },
@@ -112,13 +114,13 @@ export const TRACKS = {
         [sweep(0, 'riseR', 2)], [reach(0, 'wideL'), reach(2, 'wideR')], [squeeze(0, 'R', 2), clap(3)], [clap(0), clap(1), clap(2), clap(3)]
       ] },
       normal: { lv: 5, defs: [
-        [grab(0, 'L'), grab(1.5, 'R')], mirror([grab(0, 'L'), grab(1.5, 'R')]),
-        [clap(0), grab(1, 'L'), grab(2.5, 'R')], mirror([clap(0), grab(1, 'L'), grab(2.5, 'R')]),
+        [grab(0, 'L'), grab(1, 'R'), grab(3, 'L')], mirror([grab(0, 'L'), grab(1, 'R'), grab(3, 'L')]),
+        [clap(0), grab(1, 'L'), grab(3, 'R')], mirror([clap(0), grab(1, 'L'), grab(3, 'R')]),
         [sweep(0, 'dropL', 2), grab(2, 'R')], mirror([sweep(0, 'dropL', 2), grab(2, 'R')]),
-        again([clap(0), clap(1.5)]),
+        again([clap(0), clap(2)]),
         [squeeze(0, 'L', 2), flip(1, 'R'), flip(3, 'R')], mirror([squeeze(0, 'L', 2), flip(1, 'R'), flip(3, 'R')]),
         [reach(0, 'hiL'), reach(1, 'midR'), reach(2, 'hiR'), reach(3, 'midL')],
-        [grab(0, 'L'), grab(0, 'R'), clap(2)], [clap(0), grab(1.5, 'L'), grab(1.5, 'R'), clap(3)]
+        [grab(0, 'L'), grab(0, 'R'), clap(2)], [clap(0), grab(1, 'L'), grab(1, 'R'), clap(3)]
       ] },
       hard: { lv: 8, defs: [
         [grab(0, 'L'), grab(.5, 'R'), clap(2)], mirror([grab(0, 'L'), grab(.5, 'R'), clap(2)]),
@@ -156,7 +158,7 @@ export const TRACKS = {
         [squeeze(0, 'L', 3), grab(1, 'R'), grab(2, 'R')], mirror([squeeze(0, 'L', 3), grab(1, 'R'), grab(2, 'R')]),
         again([clap(0), clap(1), clap(2)]),
         [sweep(0, 'riseL', 2), grab(1, 'R'), grab(2, 'R')], mirror([sweep(0, 'riseL', 2), grab(1, 'R'), grab(2, 'R')]),
-        [grab(0, 'L'), grab(1.5, 'R'), grab(3, 'L')], [flip(0, 'L'), flip(0, 'R'), clap(2)]
+        [grab(0, 'L'), grab(2, 'R'), grab(3, 'L')], [flip(0, 'L'), flip(0, 'R'), clap(2)]
       ] },
       hard: { lv: 9, defs: [
         [grab(0, 'L'), grab(.5, 'R'), grab(1.5, 'L'), grab(2, 'R'), clap(3)], mirror([grab(0, 'L'), grab(.5, 'R'), grab(1.5, 'L'), grab(2, 'R'), clap(3)]),

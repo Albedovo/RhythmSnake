@@ -202,6 +202,7 @@ input[type=range]{width:100%;accent-color:var(--flip)}
 .lesson-head{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
 #lesson-phase{padding:1px 9px;border:2px solid var(--ink);border-radius:999px;color:var(--ink);font-weight:500}
 #lesson-phase[data-active=true]{background:var(--squeeze)}
+.lesson-tag{padding:1px 9px;border:2px solid var(--ink);border-radius:999px;background:var(--reach);color:var(--ink);font-weight:500}
 .lesson-dots{display:flex;gap:5px;margin-left:auto}
 .lesson-dots i{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink)}
 .lesson-dots i.on{background:var(--squeeze)}

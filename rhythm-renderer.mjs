@@ -1,7 +1,7 @@
 // Canvas drawing. Timing is read from the two-bar CALL / ECHO panel and from food shapes that
 // fill up as their beat approaches; there are no approach rings or scan lines.
-import { TYPES, clamp, toScreen, playField, targetRadius, sweepRadius, beatPanelRect } from './rhythm-core.mjs?v=25';
-import { pathPoint, BAR } from './rhythm-chart.mjs?v=25';
+import { TYPES, clamp, toScreen, playField, targetRadius, sweepRadius, beatPanelRect } from './rhythm-core.mjs?v=26';
+import { pathPoint, BAR } from './rhythm-chart.mjs?v=26';
 
 const TAU = Math.PI * 2;
 // Paper-and-ink palette shared with the portfolio: cream paper, dark ink outlines, hard offset shadows.
