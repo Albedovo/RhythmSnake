@@ -30,15 +30,15 @@ Each phrase has two bars: **CALL** (listen) and **ECHO** (repeat). The number on
 
 The fixed circles show the actual hit areas for GRAB, REACH, SQUEEZE, and FLIP. SWEEP uses a separate outlined circle for each path point. CLAP works anywhere in camera view, including fast claps starting from opposite sides. For FLIP, the trajectory must cross the target on its numbered beat; you do not need to start inside.
 
-**Gesture style:** choose STYLE → Gesture on the start screen to play without aiming. Only the move and its timing count: there are no circles, either hand works, REACH becomes GRAB, SWEEP becomes SQUEEZE, and every hit sets off a full-screen pulse. Standard and Gesture keep separate best scores.
+**Hit effects:** every hit sets off a full-screen pulse — a shockwave, rays and confetti in the move colours. It grows with your GROOVE multiplier, adds glowing edges from ×3 and a flash at ×4, and each new multiplier gets a banner. Turn it off under Settings → Color motion.
 
 In keyboard mode, X performs a GRAB with your “other hand” for sections where one hand must GRAB while the other holds a SQUEEZE.
 
 REACH (touch) and SWEEP (slide) targets always award Perfect when touched within their active window; untouched targets still count as Miss. These gestures do not receive timing-based Good grades.
 
-**Scoring:** Perfect 100 / Good 50 / Miss 0, multiplied by your GROOVE multiplier (10-note combo ×2, 25-note combo ×3, 50-note combo ×4). Grades: S ≥95%, A ≥88%, B ≥75%, C ≥60%. Clear a stage by finishing with energy remaining and at least 60% accuracy. The results screen suggests a latency calibration adjustment based on your average timing offset.
+**Scoring:** Perfect 100 / Good 50 / Miss 0, multiplied by your GROOVE multiplier (10-note combo ×2, 25-note combo ×3, 50-note combo ×4). Grades: S ≥95%, A ≥88%, B ≥75%, C ≥60%. Every run plays to the end and is settled on its final score; a clear needs at least 60% accuracy. The results screen suggests a latency calibration adjustment based on your average timing offset.
 
-**Difficulty:** INTRO → FLOW → GROOVE → SYNC → BOUNCE → OVERDRIVE → POLYRHYTHM — seven levels in total.
+**Tracks:** three songs, each with its own groove and four charts — SNACK ATTACK (100 BPM, Lv 1/4/7/10), GROOVE KITCHEN (116 BPM, Lv 2/5/8/11) and SUGAR RUSH (128 BPM, Lv 3/6/9/12). EASY lets either hand play anything; from NORMAL up each side belongs to its hand; long sweeps only appear in HARD and EXPERT.
 
 ## Run Locally
 
@@ -56,9 +56,10 @@ Then open http://localhost:8137. Camera access requires localhost or HTTPS.
 | File | Description |
 |---|---|
 | `game.js` | Main loop, hit detection, input, and UI |
-| `rhythm-chart.mjs` | Chart format, charts for all seven difficulty levels, and chart linting |
-| `rhythm-core.mjs` | Gesture types, difficulty levels, timing windows, and hand features |
+| `rhythm-chart.mjs` | Chart format, the three tracks and their difficulty tiers, and chart linting |
+| `rhythm-core.mjs` | Gesture types, timing windows, and hand features |
 | `scoring.mjs` | Scoring, GROOVE, grades, and calibration suggestions |
+| `lesson-icons.mjs` | Animated icons for the tutorial bar |
 | `tutorial.mjs` | Guided tutorial lessons |
 | `audio.mjs` | Backing tracks, beat counts, and sound effects |
 | `rhythm-renderer.mjs` | Canvas rendering |

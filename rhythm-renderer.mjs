@@ -1,7 +1,7 @@
 // Canvas drawing. Timing is read from the two-bar CALL / ECHO panel and from food shapes that
 // fill up as their beat approaches; there are no approach rings or scan lines.
-import { TYPES, clamp, toScreen, playField, targetRadius, sweepRadius, beatPanelRect } from './rhythm-core.mjs?v=23';
-import { pathPoint, BAR } from './rhythm-chart.mjs?v=23';
+import { TYPES, clamp, toScreen, playField, targetRadius, sweepRadius, beatPanelRect } from './rhythm-core.mjs?v=25';
+import { pathPoint, BAR } from './rhythm-chart.mjs?v=25';
 
 const TAU = Math.PI * 2;
 // Paper-and-ink palette shared with the portfolio: cream paper, dark ink outlines, hard offset shadows.
@@ -99,8 +99,8 @@ function drawNote(c, n, s, r) {
   if (n.type === 'sweep') drawSweep(c, n, s, r);
   else {
     const p = toScreen(n.pos, s.w, s.h), size = n.type === 'reach' ? r : r * .72 * (1 + bounce * .25);
-    // This fixed ring is the actual hit boundary. The shape can pulse inside it. Gesture style has no boundary.
-    if (n.type !== 'clap' && n.type !== 'reach' && !s.gestureStyle) {
+    // This fixed ring is the actual hit boundary. The shape can pulse inside it.
+    if (n.type !== 'clap' && n.type !== 'reach') {
       circle(c, p.x, p.y, r, color + '24');
       c.save(); c.setLineDash([7, 7]); circle(c, p.x, p.y, r, INK + 'b3', true, 2.5); c.restore();
     }
@@ -244,25 +244,56 @@ function mouthCreature(c, s, P, next, chomp, sad) {
 }
 
 // --- effects ----------------------------------------------------------------------------------
-// Gesture style rewards every hit with a full-screen pulse: a shockwave, a burst of rays and a glow on the edges.
+// Every hit sets off a full-screen pulse: a shockwave, rays and confetti in the move colours. It grows
+// with the GROOVE multiplier, adds glowing edges from ×3, and a full-screen flash at ×4.
+const CONFETTI = ['#31d7f0', '#ff9f2e', '#ffe14a', '#ff4f9a', '#7a5cff', '#5fd068'];
+const seeded = seed => () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
 function drawPulse(c, s, e, f) {
-  const color = TYPES[e.type].color, far = Math.hypot(s.w, s.h), k = ease(f), strong = e.grade === 'perfect' ? 1 : .6;
+  const color = TYPES[e.type].color, far = Math.hypot(s.w, s.h), k = ease(f), level = e.groove || 1;
+  const strong = (e.grade === 'perfect' ? 1 : .65) * (.7 + level * .1);
   c.save();
-  const glow = c.createRadialGradient(s.w / 2, s.h / 2, Math.min(s.w, s.h) * .3, s.w / 2, s.h / 2, far * .6);
-  glow.addColorStop(0, color + '00'); glow.addColorStop(1, color + '66');
-  c.globalAlpha = (1 - f) * strong; c.fillStyle = glow; c.fillRect(0, 0, s.w, s.h);
-  c.globalAlpha = (1 - f) * .55 * strong; circle(c, e.x, e.y, 40 + k * far * .55, color, true, 2 + 16 * (1 - f));
-  c.globalAlpha = (1 - f) * .35 * strong; circle(c, e.x, e.y, 20 + ease(clamp(f * 1.5, 0, 1)) * far * .3, INK, true, 2 + 6 * (1 - f));
-  c.strokeStyle = color; c.lineCap = 'round'; c.lineWidth = 4 * (1 - f) + 1; c.globalAlpha = (1 - f) * .8;
-  for (let i = 0; i < 14; i++) {
-    const a = i / 14 * Math.PI * 2 + e.born / 700, r0 = 36 + k * 160, r1 = r0 + 50 * (1 - f) + 6;
+  if (level >= 4 && f < .25) { c.globalAlpha = (1 - f / .25) * .14; c.fillStyle = color; c.fillRect(0, 0, s.w, s.h); }
+  if (level >= 3 || e.grade === 'perfect') {
+    const glow = c.createRadialGradient(s.w / 2, s.h / 2, Math.min(s.w, s.h) * .3, s.w / 2, s.h / 2, far * .6);
+    glow.addColorStop(0, color + '00'); glow.addColorStop(1, color + '66');
+    c.globalAlpha = (1 - f) * strong * (level >= 3 ? 1 : .6); c.fillStyle = glow; c.fillRect(0, 0, s.w, s.h);
+  }
+  c.globalAlpha = (1 - f) * .6 * strong; circle(c, e.x, e.y, 40 + k * far * (.35 + level * .07), color, true, 2 + (12 + level * 3) * (1 - f));
+  c.globalAlpha = (1 - f) * .4 * strong; circle(c, e.x, e.y, 20 + ease(clamp(f * 1.5, 0, 1)) * far * .3, INK, true, 2 + 5 * (1 - f));
+  const rays = 10 + level * 3;
+  c.strokeStyle = color; c.lineCap = 'round'; c.lineWidth = 4 * (1 - f) + 1; c.globalAlpha = (1 - f) * .85;
+  for (let i = 0; i < rays; i++) {
+    const a = i / rays * Math.PI * 2 + e.born / 700, r0 = 36 + k * (120 + level * 30), r1 = r0 + 50 * (1 - f) + 6;
     c.beginPath(); c.moveTo(e.x + Math.cos(a) * r0, e.y + Math.sin(a) * r0); c.lineTo(e.x + Math.cos(a) * r1, e.y + Math.sin(a) * r1); c.stroke();
   }
+  // Confetti: seeded per hit so each piece keeps its own path without storing particles.
+  const rnd = seeded(Math.floor(e.born * 1000) % 4294967296), t = f * .9;
+  c.lineWidth = 1.5; c.strokeStyle = INK; c.globalAlpha = f < .7 ? 1 : 1 - (f - .7) / .3;
+  for (let i = 0, n = 8 + level * 5; i < n; i++) {
+    const a = rnd() * Math.PI * 2, v = (180 + rnd() * 320) * (.8 + level * .1), size = 5 + rnd() * 6, spin = (rnd() - .5) * 12, kind = Math.floor(rnd() * 3);
+    const x = e.x + Math.cos(a) * v * t, y = e.y + Math.sin(a) * v * t + 420 * t * t;
+    c.save(); c.translate(x, y); c.rotate(spin * t); c.fillStyle = i % 3 === 0 ? color : CONFETTI[Math.floor(rnd() * CONFETTI.length)];
+    c.beginPath();
+    if (kind === 0) c.arc(0, 0, size * .6, 0, TAU); else if (kind === 1) c.rect(-size / 2, -size / 4, size, size / 2); else { c.moveTo(0, -size * .6); c.lineTo(size * .55, size * .45); c.lineTo(-size * .55, size * .45); c.closePath(); }
+    c.fill(); c.stroke(); c.restore();
+  }
+  c.restore();
+}
+// Reaching a new GROOVE multiplier gets its own banner in the middle of the play field.
+function drawMilestone(c, s, e, f) {
+  const pop = f < .2 ? ease(f / .2) * 1.15 : f < .3 ? 1.15 - (f - .2) * 1.5 : 1, color = GROOVE_COLORS[e.milestone] || YELLOW;
+  c.save(); c.globalAlpha = f < .75 ? 1 : 1 - (f - .75) / .25; c.translate(e.x, e.y - f * 20); c.scale(pop, pop); c.rotate(-.05);
+  const label = `GROOVE ×${e.milestone}!`;
+  c.font = `400 44px "Dela Gothic One", ${FONT}`; const tw = c.measureText(label).width + 56;
+  c.fillStyle = INK; roundRect(c, -tw / 2 + 6, -34 + 6, tw, 68, 20); c.fill();
+  c.fillStyle = color; c.strokeStyle = INK; c.lineWidth = 3.5; roundRect(c, -tw / 2, -34, tw, 68, 20); c.fill(); c.stroke();
+  c.fillStyle = INK; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, 0, 3);
   c.restore();
 }
 function drawEffects(c, s, mouth, r) {
   if (s.motion) for (const e of s.effects) if (e.pulse) drawPulse(c, s, e, clamp((s.now - e.born) / 900, 0, 1));
   for (const e of s.effects) {
+    if (e.milestone) { drawMilestone(c, s, e, clamp((s.now - e.born) / 900, 0, 1)); continue; }
     const age = s.now - e.born, f = clamp(age / 900, 0, 1), color = TYPES[e.type].color;
     if (e.small) { if (e.grade !== 'miss') { circle(c, e.x, e.y, 15 + f * 22, color, true, 3 * (1 - f)); text(c, e.label, e.x, e.y - 24 - f * 20, 12, INK); } continue; }
     if (e.grade === 'miss') {

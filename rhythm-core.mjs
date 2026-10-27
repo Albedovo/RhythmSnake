@@ -9,16 +9,6 @@ export const TYPES = {
   sweep:   { label: 'SWEEP',   hint: 'Touch each numbered circle for Perfect', color: '#5fd068', glyph: '〰', key: 'MOVE' }
 };
 
-export const LEVELS = {
-  easy:   { name: 'INTRO',      bpm: 96,  sides: false, guide: true,  description: '96 BPM · one move per bar · any hand' },
-  normal: { name: 'FLOW',       bpm: 108, sides: true,  guide: false, description: '108 BPM · two moves per bar · left side = left hand' },
-  groove: { name: 'GROOVE',     bpm: 112, sides: true,  guide: false, description: '112 BPM · three moves per bar · first doubles with both hands' },
-  hard:   { name: 'SYNC',       bpm: 120, sides: true,  guide: false, description: '120 BPM · both hands · squeeze with one, play with the other' },
-  bounce: { name: 'BOUNCE',     bpm: 120, sides: true,  guide: false, description: '120 BPM · one off-beat per bar · a few echo-twice bars' },
-  expert: { name: 'OVERDRIVE',  bpm: 126, sides: true,  guide: false, description: '126 BPM · off-beats · echo twice without a new call' },
-  master: { name: 'POLYRHYTHM', bpm: 126, sides: true,  guide: false, description: '126 BPM · 3-against-2 between hands · long sweeps' }
-};
-
 // Seconds. Camera play gets wider windows because detection adds frame jitter.
 export const WINDOWS = { camera: { perfect: .11, good: .24 }, pointer: { perfect: .07, good: .16 } };
 

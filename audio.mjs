@@ -41,13 +41,25 @@ export function noise(time, duration, volume, frequency) {
 }
 export function silence() { for (const v of voices) { try { v.stop(); } catch {} } voices.clear(); }
 
-const ROOTS = [130.81, 146.83, 174.61, 155.56];
+// Each track's groove: a chord root per phrase plus kick, snare, hat and bass patterns over eight eighths.
+const GROOVES = {
+  // Bouncy: kick on 1 and 3, snare on 2 and 4, a fifth answering the snare.
+  bounce: { roots: [130.81, 146.83, 174.61, 155.56], kick: [0, 4], snare: [2, 6], bass: [0, 4], fifth: [2, 6], hat: 'eighths' },
+  // Funk: syncopated kick, ghosted off-beat hats, bass that lands on the "and".
+  funk: { roots: [110, 123.47, 98, 130.81], kick: [0, 3, 5], snare: [2, 6], bass: [0, 3, 7], fifth: [5], hat: 'offbeats' },
+  // Drive: four on the floor, open hats on the off-beats, pumping octave bass.
+  drive: { roots: [146.83, 174.61, 130.81, 164.81], kick: [0, 2, 4, 6], snare: [2, 6], bass: [1, 3, 5, 7], fifth: [], hat: 'open' }
+};
 // One eighth-note step of the backing groove. `step` counts eighths from song start.
-export function grooveStep(at, step, phrase) {
-  const inBar = step % 8, root = ROOTS[phrase % 4];
-  noise(at, .025, inBar % 2 ? .01 : .018, 6500);
-  if (inBar === 0 || inBar === 4) { synth(110, at, .16, .26, 'sine', 42); synth(root, at, .2, .08, 'triangle'); }
-  if (inBar === 2 || inBar === 6) { noise(at, .065, .1, 1400); synth(root * 1.5, at, .12, .055); }
+export function grooveStep(at, step, phrase, style = 'bounce') {
+  const g = GROOVES[style] || GROOVES.bounce, inBar = step % 8, root = g.roots[phrase % g.roots.length], off = inBar % 2 === 1;
+  if (g.hat === 'eighths') noise(at, .025, off ? .01 : .018, 6500);
+  else if (g.hat === 'offbeats') noise(at, off ? .05 : .02, off ? .022 : .008, 7000);
+  else noise(at, off ? .09 : .02, off ? .026 : .01, 6000);
+  if (g.kick.includes(inBar)) synth(110, at, .16, .26, 'sine', 42);
+  if (g.snare.includes(inBar)) noise(at, .065, .1, 1400);
+  if (g.bass.includes(inBar)) synth(style === 'drive' ? root * 2 : root, at, .2, .08, 'triangle');
+  if (g.fifth.includes(inBar)) synth(root * 1.5, at, .12, .055);
 }
 
 // The voice counts 1-2-3-4 through the call bar and, softer, through the echo bar,

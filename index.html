@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&family=Dela+Gothic+One&display=swap">
-<link rel="stylesheet" href="style.css?v=23">
+<link rel="stylesheet" href="style.css?v=25">
 </head>
 <body class="first-run">
 <main class="game-shell">
@@ -30,15 +30,16 @@
       <button id="fullscreen" class="icon-button" aria-label="Toggle fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></svg></button>
     </nav>
   </header>
-  <div class="topline"><span id="mode">● CAMERA · CONNECTING</span><span id="energy" aria-label="Energy">▪▪▪▪▪</span><span id="progress">READY</span></div>
+  <div class="topline"><span id="mode">● CAMERA · CONNECTING</span><span id="chart-label">SNACK ATTACK</span><span id="progress">READY</span></div>
   <div id="feedback" aria-live="polite"></div>
 
   <aside id="lesson" class="lesson" hidden aria-live="polite">
-    <div class="lesson-head"><span id="lesson-phase">GET READY</span><span id="lesson-step">LESSON 1 / 8</span><div id="lesson-dots" class="lesson-dots"></div></div>
-    <h2 id="lesson-title">Listen, then echo</h2>
-    <div class="lesson-copy"><p id="lesson-text"></p><ol id="lesson-steps"></ol></div>
-    <div class="lesson-foot"><p id="lesson-note" class="lesson-note"></p>
-    <div class="lesson-actions"><button id="lesson-skip" class="pill-button">Skip</button></div></div>
+    <div id="lesson-icon" class="lesson-icon" aria-hidden="true"></div>
+    <div class="lesson-main">
+      <div class="lesson-head"><span id="lesson-step">1 / 8</span><span id="lesson-phase">GET READY</span><div id="lesson-dots" class="lesson-dots"></div></div>
+      <p class="lesson-line"><b id="lesson-title">Listen</b><span id="lesson-cue"></span><span id="lesson-note" class="lesson-note"></span></p>
+    </div>
+    <button id="lesson-skip" class="pill-button">Skip</button>
   </aside>
 
   <div id="overlay" class="launch-overlay">
@@ -55,16 +56,14 @@
           <span data-type="flip"><i>▲</i>FLIP<small>swipe</small></span>
           <span data-type="sweep"><i>〰</i>SWEEP<small>dot by dot</small></span>
         </div>
-        <label class="difficulty-choice" for="difficulty">LEVEL<select id="difficulty"><option value="easy">01 / INTRO</option><option value="normal" selected>02 / FLOW</option><option value="groove">03 / GROOVE</option><option value="hard">04 / SYNC</option><option value="bounce">05 / BOUNCE</option><option value="expert">06 / OVERDRIVE</option><option value="master">07 / POLYRHYTHM</option></select></label>
+        <div class="choice-row"><label class="difficulty-choice" for="track">TRACK<select id="track"><option value="snack" selected>01 / SNACK ATTACK</option><option value="kitchen">02 / GROOVE KITCHEN</option><option value="rush">03 / SUGAR RUSH</option></select></label>
+        <label class="difficulty-choice" for="difficulty">LEVEL<select id="difficulty"></select></label></div>
         <p id="difficulty-description" class="level-description"></p>
-        <label class="difficulty-choice" for="style">STYLE<select id="style"><option value="standard" selected>Standard · aim + gesture</option><option value="gesture">Gesture · just move, no aiming</option></select></label>
-        <p id="style-description" class="level-description"></p>
         <label class="difficulty-choice" for="input-mode">INPUT<select id="input-mode"><option value="camera" selected>Camera / two hands</option><option value="pointer">Trackpad · mouse · touch + keys</option></select></label>
         <p id="camera-status" class="small">Connecting camera. Video stays on your device.</p>
         <div class="launch-actions">
           <button id="tutorial-start" class="tutorial-button">Guided tutorial <span>↗</span></button>
           <button id="start" class="start-button">Start <span>↗</span></button>
-          <button id="practice" class="practice-button">Practice · no energy loss</button>
         </div>
         <p class="first-run-hint">New here? The tutorial teaches each move with the camera, one at a time.</p>
       </div>
@@ -115,9 +114,8 @@
         <article data-type="flip"><i>▲</i><div><h3>FLIP</h3><p>Swipe an open palm through the outlined circle in the arrow’s direction on the beat. No need to start inside.</p></div></article>
         <article data-type="sweep"><i>〰</i><div><h3>SWEEP</h3><p>Glide along the path and pass each numbered dot on its beat. Every dot scores; half the dots keep the sweep alive.</p></div></article>
       </div>
-      <p class="tip"><b>Gesture style</b> (STYLE on the start screen): only the move and its timing count. No circles to aim at, either hand works, REACH becomes GRAB and SWEEP becomes SQUEEZE, and every hit sets off a full-screen pulse.</p>
       <h3 class="help-sub">Scoring</h3>
-      <p class="tip">Perfect 100 · Good 50 · Miss 0, times your <b>GROOVE</b>: ×2 from 10 combo, ×3 from 25, ×4 from 50. Accuracy counts Perfect as 1 and Good as ½. Rank S ≥ 95% · A ≥ 88% · B ≥ 75% · C ≥ 60%. A miss costs one energy; every 16 combo gives one back. Clear a track with energy left and at least 60% accuracy.</p>
+      <p class="tip">Perfect 100 · Good 50 · Miss 0, times your <b>GROOVE</b>: ×2 from 10 combo, ×3 from 25, ×4 from 50. Accuracy counts Perfect as 1 and Good as ½. Rank S ≥ 95% · A ≥ 88% · B ≥ 75% · C ≥ 60%. Every run plays to the end and is settled on its final score. Clear a track with at least 60% accuracy.</p>
       <p class="tip">Trackpad / touch: move into rings for Reach and Sweep, Z or click for Grab (hold for Squeeze), X for the other hand's Grab while squeezing, Space for Clap, ← → for Flip.</p>
     </div>
   </section>
@@ -135,7 +133,7 @@
         <p id="status" class="setting-note" aria-live="polite">Video is processed locally. No recording or upload.</p>
       </div>
       <label class="setting-row" for="cursor-response"><span><b>Low-latency cursor</b><small>Short motion prediction for the drawn cursor only. Judging always uses raw positions.</small></span><input id="cursor-response" type="checkbox" checked></label>
-      <label class="setting-row" for="bpm"><span><b>Tempo</b><small>Each level sets a default; change it before playing.</small></span><select id="bpm"><option value="96">96 BPM · relaxed</option><option value="108">108 BPM · easy</option><option value="112">112 BPM · moderate</option><option value="120">120 BPM · steady</option><option value="126">126 BPM · brisk</option><option value="132">132 BPM · fast</option></select></label>
+      <label class="setting-row" for="bpm"><span><b>Tempo</b><small>Each track sets its own tempo; change it before playing.</small></span><select id="bpm"><option value="90">90 BPM · relaxed</option><option value="100">100 BPM · easy</option><option value="108">108 BPM · moderate</option><option value="116">116 BPM · steady</option><option value="120">120 BPM · steady</option><option value="128">128 BPM · brisk</option><option value="132">132 BPM · fast</option></select></label>
       <label class="setting-row" for="sound"><span><b>Beat audio</b><small>Count-in, call sounds and percussion</small></span><input id="sound" type="checkbox" checked></label>
       <label class="setting-row" for="motion"><span><b>Color motion</b><small>Hit bursts and flying food</small></span><input id="motion" type="checkbox" checked></label>
       <div class="offset-setting"><label for="offset"><span>Input latency calibration</span><output id="offset-value" for="offset">0 ms</output></label><input id="offset" type="range" min="-200" max="200" step="10" value="0"><div class="range-labels"><span>−200 ms</span><span>+200 ms</span></div></div>
@@ -143,6 +141,6 @@
     </div>
   </section>
 </main>
-<script type="module" src="game.js?v=23"></script>
+<script type="module" src="game.js?v=25"></script>
 </body>
 </html>

@@ -1,12 +1,13 @@
-import { TYPES, LEVELS, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=23';
-import { buildPhrase, songSource, lintSong, gestureOnly, BAR, LEAD_IN } from './rhythm-chart.mjs?v=23';
-import { Score, bestFor, saveBest, MAX_ENERGY, GROOVE } from './scoring.mjs?v=23';
-import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=23';
-import * as sound from './audio.mjs?v=23';
-import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=23';
-import { CameraController } from './camera-controller.mjs?v=23';
-import { WorkerHandTracker } from './hand-worker-client.mjs?v=23';
-import { drawRhythm } from './rhythm-renderer.mjs?v=23';
+import { TYPES, WINDOWS, GESTURE_LAG, HAND, timingGrade, onSide, handFeatures, clapFeatures, cameraPoint, toScreen, targetRadius, sweepRadius, setPlayLayout, segmentCircleInterval } from './rhythm-core.mjs?v=25';
+import { buildPhrase, songSource, lintSong, TRACKS, DIFFICULTIES, SONGS, chartFor, BAR, LEAD_IN } from './rhythm-chart.mjs?v=25';
+import { Score, bestFor, saveBest, GROOVE } from './scoring.mjs?v=25';
+import { Tutorial, TUTORIAL_BPM, hintFor, tutorialDone, markTutorialDone } from './tutorial.mjs?v=25';
+import * as sound from './audio.mjs?v=25';
+import { HandTracks, ClapGesture, responsiveCursor } from './hand-input.mjs?v=25';
+import { CameraController } from './camera-controller.mjs?v=25';
+import { WorkerHandTracker } from './hand-worker-client.mjs?v=25';
+import { drawRhythm } from './rhythm-renderer.mjs?v=25';
+import { lessonIcon } from './lesson-icons.mjs?v=25';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const $ = id => document.getElementById(id), canvas = $('game'), ctx = canvas.getContext('2d');
@@ -24,7 +25,7 @@ for (const el of [$('lesson'), document.querySelector('.play-toolbar')]) layoutO
 
 // --- run state --------------------------------------------------------------------------------
 let running = false, paused = false, pauseAt = 0, startTime = 0, beat = .5, nextStep = 0, scheduler = 0;
-let mode = 'song', levelKey = 'normal', level = LEVELS.normal, practice = false;
+let mode = 'song', trackKey = 'snack', diffKey = 'normal', level = DIFFICULTIES.normal;
 let source = null, sourceDone = false, phrases = [], notes = [], totalBeats = 0, songPhrases = 0;
 let score = new Score(), tutorial = null, effects = [], lessonMessage = null;
 let cameraMode = false, cameraBusy = false, inputMode = 'camera', detector = null, cameraHands = [];
@@ -44,17 +45,15 @@ const judgeTime = (t = songTime()) => t - outLatency() - offset();
 const win = () => cameraMode ? WINDOWS.camera : WINDOWS.pointer;
 const lag = type => cameraMode ? GESTURE_LAG[type] || 0 : 0;
 const motion = () => $('motion').checked;
-// Gesture style: only the move and its timing are judged, never where the hand is.
-const gestureStyle = () => $('style').value === 'gesture';
-const bestKey = () => (cameraMode || inputMode === 'camera' ? 'camera' : 'pointer') + (gestureStyle() ? '-gesture' : '');
+const bestKey = () => cameraMode || inputMode === 'camera' ? 'camera' : 'pointer';
 
 // --- phrases ------------------------------------------------------------------------------------
 function appendPhrase() {
   const item = source.next();
   if (!item) { sourceDone = true; return false; }
   const start = phrases.length ? phrases.at(-1).end : LEAD_IN;
-  const sides = mode === 'tutorial' ? item.options.sides : level.sides, def = gestureStyle() ? gestureOnly(item.def) : item.def;
-  const ph = buildPhrase(def, start, beat, phrases.length, { ...item.options, sides: cameraMode && sides && !gestureStyle() });
+  const sides = mode === 'tutorial' ? item.options.sides : level.sides;
+  const ph = buildPhrase(item.def, start, beat, phrases.length, { ...item.options, sides: cameraMode && sides });
   ph.lesson = item.lesson; ph.demo = !!item.options.demo;
   phrases.push(ph); notes.push(...ph.notes); totalBeats = ph.end;
   return true;
@@ -78,7 +77,7 @@ function scheduleMusic() {
     nextStep++;
     if (at < now - .02 || step >= totalBeats * 2 + 2) continue;
     const ph = phraseAt(t + 1e-6);
-    sound.grooveStep(at, step, ph?.index ?? 0);
+    sound.grooveStep(at, step, ph?.index ?? 0, mode === 'tutorial' ? 'bounce' : TRACKS[trackKey].groove);
     if (!ph) continue;
     const local = Math.round((t - ph.callAt) / half); // eighths since the call bar started
     if (local >= 0 && local < BAR * 2 * (1 + ph.times)) { // call bar + every echo bar, not the rest bar
@@ -105,11 +104,12 @@ function notePixel(n, time) {
 }
 function burst(n, grade, label, points = 0, at = null) {
   const p = at || notePixel(n);
-  effects.push({ type: n.type, grade, label, points, x: p.x, y: p.y, born: performance.now(), pulse: gestureStyle() && grade !== 'miss' });
+  effects.push({ type: n.type, grade, label, points, x: p.x, y: p.y, born: performance.now(), pulse: grade !== 'miss', groove: score.groove });
   effects = effects.slice(-14);
 }
 function award(n, grade, delta, label = null) {
-  const gained = n.demo ? 0 : score.add(grade, n.type, grade === 'miss' ? null : delta);
+  const groove = score.groove, gained = n.demo ? 0 : score.add(grade, n.type, grade === 'miss' ? null : delta);
+  if (score.groove > groove) effects.push({ milestone: score.groove, type: n.type, x: w / 2, y: h * .4, born: performance.now() });
   if (grade === 'miss') { if (!n.demo) sound.missSound(); }
   else if (!n.demo) sound.confirmSound(grade);
   // The judgement is drawn on the note itself, next to the beat it belongs to.
@@ -120,9 +120,8 @@ function fail(n, reason) {
   n.state = 'miss'; n.reason = reason;
   award(n, 'miss', null, n.type === 'squeeze' && n.tail ? 'MISS' : 'MISS');
   if (n.demo) return;
-  if (score.drain() <= 0 && !practice) end('failed');
-  const hint = hintFor(reason, n.type, gestureStyle());
-  if (hint && mode === 'song' && level === LEVELS.easy) feedback('MISS · ' + hint, 'miss');
+  const hint = hintFor(reason, n.type);
+  if (hint && mode === 'song' && level.hints) feedback('MISS · ' + hint, 'miss');
 }
 
 const KIND = { fist: ['grab', 'squeeze'], clap: ['clap'], flip: ['flip'] };
@@ -135,8 +134,8 @@ function act(kind, point, eventTime, dir = null) {
   const base = judgeTime(eventTime), wnd = win().good, radius = targetRadius(w, h);
   const near = notes.filter(n => n.state === 'waiting' && !n.demo && types.includes(n.type) && Math.abs(base - n.time) < .8);
   const events = near.map(n => {
-    if (n.type === 'flip' && point.path && !gestureStyle()) return { n, event: flipContact(n, point.path, point.handId) };
-    const spatial = gestureStyle() || n.type === 'clap' || (point.visible && distPx(point, n.pos) <= radius);
+    if (n.type === 'flip' && point.path) return { n, event: flipContact(n, point.path, point.handId) };
+    const spatial = n.type === 'clap' || (point.visible && distPx(point, n.pos) <= radius);
     return { n, event: spatial ? { delta: base - lag(n.type) - n.time, point } : null };
   });
   const sideOk = (n, p) => !cameraMode || n.side === 'A' || n.side === 'B' || onSide(n.side, p.x);
@@ -159,8 +158,8 @@ function act(kind, point, eventTime, dir = null) {
     award(hit, grade, delta, grade === 'perfect' ? 'SQUEEZE!' : 'SQUEEZE');
   } else {
     hit.state = 'hit'; award(hit, grade, delta);
-    // A key press only covers additional notes whose circles also contain the pointer (any of them in gesture style).
-    if (!cameraMode) for (const n of near) if (n !== hit && n.type === hit.type && Math.abs(n.time - hit.time) < 1e-3 && (gestureStyle() || point.visible && distPx(point, n.pos) <= radius)) { n.state = 'hit'; award(n, grade, delta); }
+    // A key press only covers additional notes whose circles also contain the pointer.
+    if (!cameraMode) for (const n of near) if (n !== hit && n.type === hit.type && Math.abs(n.time - hit.time) < 1e-3 && point.visible && distPx(point, n.pos) <= radius) { n.state = 'hit'; award(n, grade, delta); }
   }
   return true;
 }
@@ -187,7 +186,7 @@ function release(handId, eventTime) {
   const n = holdingBy(handId);
   if (!n || !running) return;
   const d = judgeTime(eventTime) - lag('squeeze') - n.tail.time;
-  if (d < -win().good) { n.tail.state = 'miss'; n.state = 'hit'; n.reason = 'release'; n.owner = null; award(n, 'miss', null, 'TOO SOON'); if (score.drain() <= 0 && !practice) end('failed'); return; }
+  if (d < -win().good) { n.tail.state = 'miss'; n.state = 'hit'; n.reason = 'release'; n.owner = null; award(n, 'miss', null, 'TOO SOON'); return; }
   finishSqueeze(n, timingGrade(d, cameraMode) || 'good', d);
 }
 function finishSqueeze(n, grade, delta) { n.tail.state = grade; n.state = 'hit'; n.owner = null; n.releasedAt = performance.now(); award(n, grade, delta, grade === 'perfect' ? 'RELEASE!' : 'RELEASE'); }
@@ -252,7 +251,7 @@ function tickSweep(n, jt, pts, r, wnd) {
   if (n.ticks.every(k => k.state !== 'waiting')) {
     const ok = n.ticks.filter(k => k.state !== 'miss').length / n.ticks.length;
     if (ok >= .5) { n.state = 'hit'; burst(n, 'perfect', ok === 1 ? 'CLEAN SWEEP' : 'SWEEP', 0, pxOf(n.ticks.at(-1).pos)); }
-    else { n.state = 'miss'; n.reason = 'none'; burst(n, 'miss', 'SWEEP LOST', 0, pxOf(n.ticks.at(-1).pos)); if (score.drain() <= 0 && !practice) end('failed'); updateHud(); }
+    else { n.state = 'miss'; n.reason = 'none'; burst(n, 'miss', 'SWEEP LOST', 0, pxOf(n.ticks.at(-1).pos)); updateHud(); }
   }
 }
 const pxOf = pos => toScreen(pos, w, h);
@@ -279,23 +278,22 @@ function settlePhrases() {
 }
 
 // --- run lifecycle ----------------------------------------------------------------------------
-async function start({ isPractice = false, isTutorial = false } = {}) {
+async function start({ isTutorial = false } = {}) {
   if (cameraBusy) { $('camera-status').textContent = 'Camera is connecting. Please wait.'; return; }
   if (inputMode === 'camera' && !cameraMode) { await connectCamera(); if (!cameraMode) return; }
   try { await sound.initAudio($('sound').checked); } catch { feedback('Click again to enable audio.'); return; }
   stopMusic();
-  mode = isTutorial ? 'tutorial' : 'song'; levelKey = $('difficulty').value; level = LEVELS[levelKey] || LEVELS.normal;
-  practice = isPractice || isTutorial;
+  mode = isTutorial ? 'tutorial' : 'song'; trackKey = $('track').value; diffKey = $('difficulty').value; level = DIFFICULTIES[diffKey] || DIFFICULTIES.normal;
   beat = 60 / (isTutorial ? TUTORIAL_BPM : Number($('bpm').value));
-  tutorial = isTutorial ? new Tutorial({ camera: cameraMode, gesture: gestureStyle() }) : null;
-  source = isTutorial ? tutorial : songSource(levelKey, Number($('bpm').value));
+  tutorial = isTutorial ? new Tutorial({ camera: cameraMode }) : null;
+  source = isTutorial ? tutorial : songSource(trackKey, diffKey);
   songPhrases = isTutorial ? 0 : source.total;
-  score = new Score({ practice }); phrases = []; notes = []; sourceDone = false; totalBeats = LEAD_IN + BAR * 2; effects = []; lessonMessage = null;
+  score = new Score(); phrases = []; notes = []; sourceDone = false; totalBeats = LEAD_IN + BAR * 2; effects = []; lessonMessage = null;
   resetInputs();
   running = true; paused = false; startTime = audioNow() + .4; nextStep = 0;
   fillPhrases();
   for (const id of ['overlay', 'summary', 'help-panel', 'settings-panel']) $(id).hidden = true;
-  for (const id of ['difficulty', 'style', 'bpm', 'offset', 'input-mode']) $(id).disabled = true;
+  for (const id of ['track', 'difficulty', 'bpm', 'offset', 'input-mode']) $(id).disabled = true;
   $('stop').disabled = false; document.body.classList.add('playing'); document.body.classList.toggle('tutorial', isTutorial);
   scheduleMusic(); scheduler = setInterval(scheduleMusic, 25); canvas.focus(); updateHud(); updateLesson();
   feedback(isTutorial ? 'LISTEN TO THE CALL' : 'LISTEN · THEN ECHO');
@@ -305,7 +303,7 @@ function end(reason = 'finished') {
   if (!running) return;
   running = false; paused = false; stopMusic(); padHeld = {};
   document.body.classList.remove('playing', 'tutorial');
-  for (const id of ['difficulty', 'style', 'bpm', 'offset', 'input-mode']) $(id).disabled = false;
+  for (const id of ['track', 'difficulty', 'bpm', 'offset', 'input-mode']) $(id).disabled = false;
   $('stop').disabled = true;
   $('overlay').hidden = false; document.querySelector('.intro-content').hidden = true; $('summary').hidden = false;
   if (reason === 'tutorial' || mode === 'tutorial') return showTutorialEnd(reason);
@@ -317,8 +315,8 @@ function showTutorialEnd(reason) {
   if (complete) markTutorialDone();
   $('summary').innerHTML = `<p class="eyebrow">${complete ? 'TUTORIAL COMPLETE' : 'TUTORIAL PAUSED'}</p>
     <h1>${complete ? 'You know every move.' : 'Come back any time.'}</h1>
-    <p class="summary-lead">${complete ? 'Start with INTRO: one move per bar, any hand, with guide clicks.' : 'Lessons left: ' + (tutorial ? tutorial.lessons.length - tutorial.index : 0)}</p>
-    <div class="summary-actions"><button class="start-button" data-go="intro">Play INTRO <span>↗</span></button><button class="practice-button" data-go="menu">Menu</button></div>`;
+    <p class="summary-lead">${complete ? 'Start with SNACK ATTACK on EASY: one move per bar, any hand.' : 'Lessons left: ' + (tutorial ? tutorial.lessons.length - tutorial.index : 0)}</p>
+    <div class="summary-actions"><button class="start-button" data-go="intro">Play SNACK ATTACK · EASY <span>↗</span></button><button class="practice-button" data-go="menu">Menu</button></div>`;
   bindSummaryButtons();
   refreshLaunch();
 }
@@ -326,17 +324,17 @@ function showTutorialEnd(reason) {
 const TYPE_ORDER = ['grab', 'reach', 'squeeze', 'clap', 'flip', 'sweep'];
 function showSummary(reason) {
   const r = score.result();
-  const isBest = !practice && reason === 'finished' && saveBest(levelKey, bestKey(), r);
-  const title = practice ? 'Practice run' : reason === 'stopped' ? 'Run ended' : reason === 'failed' ? 'Out of energy' : r.cleared ? 'Track cleared' : 'Not quite';
+  const isBest = reason === 'finished' && saveBest(chartKey(), bestKey(), r);
+  const title = reason === 'stopped' ? 'Run ended' : r.cleared ? 'Track cleared' : 'Not quite';
   const bars = TYPE_ORDER.filter(t => r.byType[t]).map(t => {
     const c = r.byType[t], total = c.perfect + c.good + c.miss, acc = (c.perfect + c.good * .5) / total;
     return `<div class="type-row" data-type="${t}"><span>${TYPES[t].label}</span><i style="--v:${Math.round(acc * 100)}%"></i><b>${Math.round(acc * 100)}%</b></div>`;
   }).join('');
   const advice = r.advice && r.advice.apply ? `<div class="advice"><p>Your moves landed <b>${Math.abs(r.advice.ms)} ms ${r.advice.ms > 0 ? 'late' : 'early'}</b> on average.</p><button class="pill-button" id="apply-offset" data-ms="${r.advice.apply}">Apply ${r.advice.apply > 0 ? '+' : ''}${r.advice.apply} ms calibration</button></div>`
     : r.advice ? `<div class="advice"><p>Timing is centred (${r.advice.ms >= 0 ? '+' : ''}${r.advice.ms} ms). Calibration looks right.</p></div>` : '';
-  $('summary').innerHTML = `<p class="eyebrow">${levelKey === 'easy' ? 'INTRO' : level.name}${gestureStyle() ? ' · GESTURE' : ''} · ${title.toUpperCase()}${isBest ? ' · NEW BEST' : ''}</p>
+  $('summary').innerHTML = `<p class="eyebrow">${chartLabel()} · ${title.toUpperCase()}${isBest ? ' · NEW BEST' : ''}</p>
     <div class="result-head"><div class="rank" data-rank="${r.rank}">${r.rank}</div><div><div class="result-score">${String(r.points).padStart(6, '0')}</div>
-    <p class="summary-lead">Accuracy ${(r.accuracy * 100).toFixed(1)}% · Best combo ${r.maxCombo}${r.cleared ? '' : ' · clear needs 60% and energy left'}</p></div></div>
+    <p class="summary-lead">Accuracy ${(r.accuracy * 100).toFixed(1)}% · Best combo ${r.maxCombo}${r.cleared ? '' : ' · a clear needs 60% accuracy'}</p></div></div>
     <div class="judge-row"><span>PERFECT <b>${r.counts.perfect}</b></span><span>GOOD <b>${r.counts.good}</b></span><span>MISS <b>${r.counts.miss}</b></span></div>
     <div class="type-bars">${bars}</div>${advice}
     <div class="summary-actions"><button class="start-button" data-go="again">Play again <span>↗</span></button><button class="practice-button" data-go="menu">Menu</button></div>`;
@@ -346,8 +344,8 @@ function showSummary(reason) {
 
 function bindSummaryButtons() {
   for (const b of $('summary').querySelectorAll('[data-go]')) b.onclick = () => {
-    if (b.dataset.go === 'again') start({ isPractice: practice });
-    if (b.dataset.go === 'intro') { $('difficulty').value = 'easy'; setDifficulty(); start(); }
+    if (b.dataset.go === 'again') start();
+    if (b.dataset.go === 'intro') { $('track').value = 'snack'; setTrack(); $('difficulty').value = 'easy'; setDifficulty(); start(); }
     if (b.dataset.go === 'menu') { $('summary').hidden = true; document.querySelector('.intro-content').hidden = false; }
   };
   const apply = $('apply-offset');
@@ -360,7 +358,7 @@ function updateHud() {
   $('combo').textContent = score.combo;
   $('groove').textContent = '×' + score.groove; $('groove').dataset.level = score.groove;
   $('accuracy').textContent = score.units ? (score.accuracy * 100).toFixed(1) + '%' : '—';
-  $('energy').textContent = practice ? (mode === 'tutorial' ? 'TUTORIAL' : 'PRACTICE') : '▪'.repeat(score.energy) + '▫'.repeat(MAX_ENERGY - score.energy);
+  $('chart-label').textContent = mode === 'tutorial' ? 'TUTORIAL' : chartLabel();
   const ph = phraseAt(visualTime());
   $('progress').textContent = mode === 'tutorial' ? `LESSON ${Math.min(tutorial.index + 1, tutorial.lessons.length)} / ${tutorial.lessons.length}` : `PHRASE ${Math.min(songPhrases, (ph?.index ?? -1) + 1)} / ${songPhrases}`;
 }
@@ -368,23 +366,25 @@ function updateLesson() {
   const box = $('lesson');
   if (mode !== 'tutorial' || !tutorial || tutorial.finished) { box.hidden = true; return; }
   const l = tutorial.lesson; box.hidden = false;
-  $('lesson-step').textContent = `LESSON ${tutorial.index + 1} / ${tutorial.lessons.length}`;
-  $('lesson-title').textContent = l.title;
+  $('lesson-step').textContent = `${tutorial.index + 1} / ${tutorial.lessons.length}`;
   if (box.dataset.lesson !== l.id) {
     box.dataset.lesson = l.id;
-    $('lesson-text').textContent = l.text;
-    const steps = !cameraMode && l.keys ? l.keys : l.steps;
-    $('lesson-steps').replaceChildren(...steps.map(step => { const li = document.createElement('li'); li.textContent = step; return li; }));
+    $('lesson-title').textContent = l.title;
+    $('lesson-cue').textContent = !cameraMode && l.keyCue ? l.keyCue : l.cue;
+    $('lesson-icon').innerHTML = lessonIcon(l.icon, !cameraMode);
   }
+  $('lesson-icon').style.setProperty('--beat', `${beat}s`);
   const ph = phraseAt(visualTime()), elapsed = ph ? (visualTime() - ph.callAt) / beat : -1;
-  const phase = elapsed < 0 || ph?.lesson !== tutorial.index ? 'GET READY' : elapsed < 4 ? 'LISTEN · WATCH' : elapsed < 4 * (1 + ph.times) ? (ph.demo ? 'DEMO · WATCH' : 'YOUR TURN') : 'REST · READ THE TIPS';
+  const phase = elapsed < 0 || ph?.lesson !== tutorial.index ? 'GET READY' : elapsed < 4 ? 'LISTEN' : elapsed < 4 * (1 + ph.times) ? (ph.demo ? 'WATCH' : 'YOUR TURN') : 'REST';
   $('lesson-phase').textContent = phase;
   $('lesson-phase').dataset.active = phase === 'YOUR TURN';
   $('lesson-dots').innerHTML = Array.from({ length: l.need }, (_, i) => `<i class="${i < tutorial.passes ? 'on' : ''}"></i>`).join('');
+  // A pass or a hint briefly takes the cue's place, so the bar never grows over the notes.
   const m = lessonMessage && performance.now() < lessonMessage.until ? lessonMessage : null;
   $('lesson-note').textContent = m ? m.text : '';
   $('lesson-note').dataset.kind = m?.kind || '';
-  $('lesson-skip').textContent = m?.offerSkip ? 'Skip this lesson' : 'Skip';
+  box.toggleAttribute('data-note', !!m);
+  $('lesson-skip').textContent = m?.offerSkip ? 'Skip lesson' : 'Skip';
 }
 
 function resetInputs() { handTracks.reset(); clapGesture.reset(); cameraHands = []; padHeld = {}; }
@@ -491,11 +491,19 @@ function resume() {
   scheduleMusic(); scheduler = setInterval(scheduleMusic, 25);
 }
 function panel(id, show) { if (show) { pause(); $(id).hidden = false; } else { $(id).hidden = true; resume(); } }
-function setDifficulty() { const l = LEVELS[$('difficulty').value] || LEVELS.normal; $('bpm').value = l.bpm; refreshLaunch(); }
+// Track and difficulty pickers: each track sets its own tempo; each difficulty shows its level number.
+const chartKey = () => `${$('track').value}/${$('difficulty').value}`;
+const chartLabel = () => `${TRACKS[trackKey].title} · ${DIFFICULTIES[diffKey].name} LV${chartFor(trackKey, diffKey).lv}`;
+function setTrack() {
+  const t = TRACKS[$('track').value] || TRACKS.snack, keep = $('difficulty').value || 'normal';
+  $('difficulty').replaceChildren(...Object.entries(t.charts).map(([k, c]) => new Option(`${DIFFICULTIES[k].name} · LV ${c.lv}`, k)));
+  $('difficulty').value = t.charts[keep] ? keep : 'normal';
+  $('bpm').value = t.bpm; refreshLaunch();
+}
+function setDifficulty() { refreshLaunch(); }
 function refreshLaunch() {
-  const l = LEVELS[$('difficulty').value] || LEVELS.normal, best = bestFor($('difficulty').value, bestKey());
-  $('style-description').textContent = gestureStyle() ? 'No aiming: make the move on the beat with either hand, anywhere in view.' : 'Aim each move inside its circle; from FLOW up, each side belongs to its hand.';
-  $('difficulty-description').textContent = l.description + (best ? ` · BEST ${best.rank} ${String(best.points).padStart(6, '0')}` : '');
+  const t = TRACKS[$('track').value] || TRACKS.snack, best = bestFor(chartKey(), bestKey());
+  $('difficulty-description').textContent = `${t.bpm} BPM · ${t.blurb}` + (best ? ` · BEST ${best.rank} ${String(best.points).padStart(6, '0')}` : '');
   const fresh = !tutorialDone();
   document.body.classList.toggle('first-run', fresh);
 }
@@ -503,14 +511,10 @@ const OFFSET_KEY = 'ftb.offset';
 function saveOffset() { try { localStorage.setItem(OFFSET_KEY, $('offset').value); } catch {} }
 try { const v = localStorage.getItem(OFFSET_KEY); if (v != null) { $('offset').value = v; $('offset-value').textContent = v + ' ms'; } } catch {}
 
+$('track').onchange = setTrack;
 $('difficulty').onchange = setDifficulty;
-const STYLE_KEY = 'ftb.style';
-try { const v = localStorage.getItem(STYLE_KEY); if (v === 'gesture' || v === 'standard') $('style').value = v; } catch {}
-$('style').onchange = () => { try { localStorage.setItem(STYLE_KEY, $('style').value); } catch {} document.body.classList.toggle('gesture-style', gestureStyle()); refreshLaunch(); };
-document.body.classList.toggle('gesture-style', gestureStyle());
 $('input-mode').onchange = () => { $('input-mode').value === 'camera' ? connectCamera() : stopCamera(); };
 $('start').onclick = () => start();
-$('practice').onclick = () => start({ isPractice: true });
 $('tutorial-start').onclick = () => start({ isTutorial: true });
 $('stop').onclick = () => end('stopped');
 $('lesson-skip').onclick = () => { if (!tutorial) return; const res = tutorial.advance(); lessonMessage = { ...res, until: performance.now() + 2500 }; updateLesson(); };
@@ -535,8 +539,8 @@ function draw(now) {
   const hands = cameraMode ? cameraHands.filter(p => now - p.seen < 350).map(hd => handPoint(responsiveCursor(hd, now, $('cursor-response').checked))) : [pointer];
   drawRhythm(ctx, {
     w, h, time: vt, judgeOffset: offset(), now, beat, effects, notes, phrase: ph, nextPhrase: ph ? phrases[ph.index + 1] : null,
-    running, motion: motion(), hands, cameraMode, groove: score.groove, combo: score.combo, gestureStyle: gestureStyle(),
-    sidesOn: cameraMode && !gestureStyle() && (mode === 'tutorial' ? !!tutorial?.lesson?.sides : level.sides),
+    running, motion: motion(), hands, cameraMode, groove: score.groove, combo: score.combo,
+    sidesOn: cameraMode && (mode === 'tutorial' ? !!tutorial?.lesson?.sides : level.sides),
     videoReady: camera.stream && $('video').readyState >= 2, pointerMode: !cameraMode, leadIn: LEAD_IN * beat
   });
   if (now - lastUi > 100) {
@@ -547,8 +551,8 @@ function draw(now) {
   }
 }
 
-for (const key of Object.keys(LEVELS)) { const problems = lintSong(key, LEVELS[key].bpm); if (problems.length) console.warn('Chart lint:', problems); }
-setDifficulty(); updateHud(); requestAnimationFrame(draw);
+for (const key of Object.keys(SONGS)) { const problems = lintSong(key, TRACKS[key.split('/')[0]].bpm); if (problems.length) console.warn('Chart lint:', problems); }
+setTrack(); updateHud(); requestAnimationFrame(draw);
 window.addEventListener('load', () => { if (inputMode === 'camera' && !cameraBusy && !cameraMode) connectCamera(); }, { once: true });
 // Exposed for debugging in the console.
 window.FTB = { get notes() { return notes; }, get score() { return score; }, get phrases() { return phrases; }, act, release, songTime, judgeTime, HAND };

@@ -39,25 +39,12 @@ button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{ou
 .icon-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .topline{position:absolute;z-index:4;top:88px;left:32px;right:32px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--ink);pointer-events:none}
 #mode{color:var(--ink)}
-#energy{color:var(--clap);font-size:20px;letter-spacing:4px}
+#chart-label{color:var(--ink);font-weight:500}
 #progress{font-variant-numeric:tabular-nums}
 #feedback{position:absolute;z-index:4;left:0;right:0;top:118px;text-align:center;font-size:16px;font-weight:800;letter-spacing:1px;color:var(--ink);pointer-events:none;min-height:20px}
 #feedback[data-tone=perfect]{color:var(--flip)}#feedback[data-tone=good]{color:var(--ink)}#feedback[data-tone=miss]{color:var(--clap)}
 body:not(.playing) .topline,body:not(.playing) #feedback,body:not(.playing) .play-toolbar{visibility:hidden}
 
-/* Tutorial lesson card */
-.lesson{position:absolute;z-index:5;top:146px;left:50%;transform:translateX(-50%);width:min(460px,calc(100% - 32px));background:var(--panel);border:2.5px solid var(--border);border-radius:16px;padding:14px 18px 12px;box-shadow:var(--shadow)}
-.lesson-head{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--muted)}
-.lesson-dots{display:flex;gap:6px}
-.lesson-dots i{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink)}
-.lesson-dots i.on{background:var(--squeeze)}
-.lesson h2{margin:6px 0 4px;font-size:20px;letter-spacing:-.5px}
-.lesson p{margin:0;font-size:12px;line-height:1.55;color:var(--ink)}
-.lesson-note{min-height:18px;margin-top:6px!important;font-weight:700}
-.lesson-note[data-kind=pass],.lesson-note[data-kind=advance],.lesson-note[data-kind=finish]{color:var(--flip)}
-.lesson-note[data-kind=fail]{color:var(--clap)}
-.lesson-actions{display:flex;justify-content:flex-end;margin-top:4px}
-.lesson-actions .pill-button{padding:6px 12px;font-size:11px}
 
 /* Launch overlay */
 .launch-overlay{position:absolute;inset:0;z-index:5;display:flex;align-items:flex-start;padding:96px max(7vw,32px) 64px;overflow:hidden auto;background:linear-gradient(90deg,#fff6eafa,#fff6eae6 60%,#fff6ea80)}
@@ -75,6 +62,7 @@ h1 em{font-style:normal;color:var(--clap);-webkit-text-stroke:2px var(--ink)}
 .intro-gestures small{font-size:9px;color:var(--muted);font-weight:400;letter-spacing:0}
 .difficulty-choice{display:flex;align-items:center;gap:14px;margin:8px 0;font-family:var(--mono);font-size:12px;color:var(--ink)}
 .difficulty-choice span,.difficulty-choice{min-width:0}
+.choice-row{display:flex;gap:16px}.choice-row .difficulty-choice{flex:1;min-width:0}.choice-row .difficulty-choice+.difficulty-choice{flex:.8}
 .difficulty-choice select{flex:1;min-width:0;padding:8px 12px;font-family:var(--font);font-size:14px;background:#fff;border:2.5px solid var(--border);border-radius:12px;box-shadow:3px 3px 0 var(--ink)}
 .level-description{color:var(--muted);font-size:12px;line-height:1.6;margin:-4px 0 10px;padding-left:56px}
 .small{font-size:12px;line-height:1.6;color:var(--muted);margin:8px 0 0}
@@ -182,16 +170,13 @@ input[type=range]{width:100%;accent-color:var(--flip)}
   .acc-stat{display:none}
   .icon-button{width:30px;height:30px;font-size:14px}
   .topline{left:16px;right:16px;top:72px;font-size:8px}
-  #energy{font-size:15px}
   #feedback{top:96px;font-size:13px}
-  .lesson{top:122px;padding:10px 14px}
-  .lesson h2{font-size:16px}
-  .lesson p{font-size:11px}
   .launch-overlay{align-items:flex-start;padding:88px 20px 48px}
   .launch-panel{width:100%}
   h1{font-size:56px;letter-spacing:-3px}
   .intro-art{right:-120px;top:120px;opacity:.22;transform:scale(.6);transform-origin:right top}
   .level-description{padding-left:0}
+  .choice-row{flex-direction:column;gap:0}
   .play-toolbar{left:12px;right:12px;flex-wrap:wrap;gap:8px}
   .live-input{width:auto;flex:1;order:1}
   .live-input small{display:none}
@@ -202,31 +187,37 @@ input[type=range]{width:100%;accent-color:var(--flip)}
   .gesture-guide,.type-bars{grid-template-columns:1fr}
   .rank{font-size:72px;min-width:64px}
 }
-@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.lesson-icon .fb{display:none}}
 
-/* Tutorial has a reserved band above the playfield, measured by the shared layout. */
-.lesson{top:142px;left:24px;right:24px;transform:none;width:auto;max-height:min(180px,25vh);overflow:auto;padding:12px 16px;background:#fffffff5}
-.lesson h2{font-size:18px;margin:6px 0}
-.lesson-copy{display:grid;grid-template-columns:minmax(160px,1fr) 2fr;gap:24px;align-items:start}
-.lesson-copy p,.lesson-copy li{font-size:13px;line-height:1.45}
-.lesson-copy ol{margin:0;padding-left:20px;display:grid;gap:3px}
-.lesson-foot{display:flex;align-items:center;gap:12px;margin-top:6px}
-.lesson-foot .lesson-note{flex:1;min-width:0;margin:0!important}
-.lesson-foot .lesson-actions{position:static;flex-shrink:0;margin:0}
-#lesson-phase{color:var(--ink);font-weight:700}
-#lesson-phase[data-active=true]{color:var(--ink);background:var(--squeeze);padding:0 6px;border-radius:4px}
+
+/* Tutorial: one compact bar with an animated move icon and a single cue line, so the play field stays clear. */
+.lesson{position:absolute;z-index:5;top:132px;left:50%;transform:translateX(-50%);width:min(760px,calc(100% - 32px));display:flex;align-items:center;gap:14px;padding:8px 12px 8px 8px;background:#fff;border:2.5px solid var(--ink);border-radius:18px;box-shadow:var(--shadow)}
+.lesson-icon{width:88px;height:66px;flex-shrink:0;display:grid;place-items:center;background:var(--paper);border:2px solid var(--ink);border-radius:12px}
+.lesson-icon svg{width:84px;height:63px}
+.lesson-icon .fa{animation:lesson-a calc(var(--beat,.66s) * 2) steps(1,end) infinite}
+.lesson-icon .fb{animation:lesson-b calc(var(--beat,.66s) * 2) steps(1,end) infinite}
+@keyframes lesson-a{0%{opacity:1}50%{opacity:0}}
+@keyframes lesson-b{0%{opacity:0}50%{opacity:1}}
+.lesson-main{flex:1;min-width:0}
+.lesson-head{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+#lesson-phase{padding:1px 9px;border:2px solid var(--ink);border-radius:999px;color:var(--ink);font-weight:500}
+#lesson-phase[data-active=true]{background:var(--squeeze)}
+.lesson-dots{display:flex;gap:5px;margin-left:auto}
+.lesson-dots i{width:11px;height:11px;border-radius:50%;border:2px solid var(--ink)}
+.lesson-dots i.on{background:var(--squeeze)}
+.lesson-line{margin:5px 0 0;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:18px;line-height:1.3}
+#lesson-title{font-family:var(--display);font-weight:400;font-size:19px}
+#lesson-cue{font-weight:600}
+.lesson-note{font-size:15px;font-weight:700;padding:2px 10px;border:2px solid var(--ink);border-radius:999px}
+.lesson-note:empty{display:none}
+.lesson-note[data-kind=fail]{background:#ffd3e5}
+.lesson-note[data-kind=pass],.lesson-note[data-kind=advance],.lesson-note[data-kind=finish]{background:#d2f5fc}
+.lesson[data-note] #lesson-cue{display:none}
+#lesson-skip{flex-shrink:0;padding:6px 12px;font-size:11px}
 @media(max-width:760px){
-  .lesson{top:118px;left:12px;right:12px;padding:10px 12px;max-height:25vh}
-  .lesson-copy{grid-template-columns:1fr;gap:6px}
-  .lesson-copy p,.lesson-copy li{font-size:12px}
-  .lesson-head{letter-spacing:.5px;gap:8px}
-  .lesson-dots i{width:7px;height:7px}
+  .lesson{top:108px;gap:8px;padding:6px 8px 6px 6px}
+  .lesson-icon{width:64px;height:48px}.lesson-icon svg{width:60px;height:45px}
+  .lesson-line{font-size:14px;gap:8px}#lesson-title{font-size:15px}
+  .lesson-dots i{width:8px;height:8px}
 }
-@media(max-height:600px){
-  .lesson{top:116px;max-height:100px}
-  .lesson h2{font-size:15px}
-  .lesson-copy p,.lesson-copy li{font-size:11px}
-  .lesson-copy{grid-template-columns:1fr 2fr;gap:12px}
-}
-/* Gesture style has no position-only moves */
-body.gesture-style .intro-gestures [data-type="reach"],body.gesture-style .intro-gestures [data-type="sweep"]{display:none}
+@media(max-height:600px){.lesson{top:104px}.lesson-icon{width:60px;height:45px}.lesson-icon svg{width:56px;height:42px}}

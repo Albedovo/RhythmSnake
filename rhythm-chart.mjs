@@ -38,81 +38,153 @@ export const sweep = (beat, path, dur) => ({ beat, type: 'sweep', path, dur, sid
 // Echo the same bar `times` times back to back, without a new call in between.
 export const again = (notes, times = 2) => ({ notes, times });
 
-export const SONGS = {
-  // One move per bar, always on the downbeat. Types arrive one at a time, then mix.
-  easy: [
-    [grab(0, 'L')], [grab(0, 'R')], [grab(0, 'L'), grab(2, 'R')],
-    [reach(0, 'hiL')], [reach(0, 'hiR')], [reach(0, 'wideL'), reach(2, 'wideR')],
-    [clap(0)], [clap(0), clap(2)],
-    [squeeze(0, 'L', 2)], [squeeze(0, 'R', 3)],
-    [flip(0, 'R')], [flip(0, 'L')],
-    [sweep(0, 'riseL', 2)], [sweep(0, 'riseR', 2)],
-    [grab(0, 'L'), clap(2)], [reach(0, 'hiR'), flip(2, 'L')],
-    [sweep(0, 'rainbow', 3)], [clap(0), clap(1), clap(2)]
-  ],
-  // Two moves per bar on quarter notes; each side belongs to its own hand.
-  normal: [
-    [grab(0, 'L'), grab(2, 'R')], [grab(0, 'R'), grab(2, 'L')],
-    [reach(0, 'hiL'), reach(2, 'hiR')], [reach(0, 'wideR'), grab(2, 'L')],
-    [clap(0), clap(2)], [flip(0, 'L'), flip(2, 'R')],
-    [squeeze(0, 'L', 2), grab(3, 'R')], [squeeze(0, 'R', 3)],
-    [sweep(0, 'riseL', 2), grab(3, 'R')], [sweep(0, 'rainbow', 3)],
-    [grab(0, 'L'), grab(1, 'R'), clap(2)], [reach(0, 'hiR'), reach(1, 'hiL'), clap(3)],
-    [flip(0, 'R'), clap(2)], [sweep(0, 'dropR', 2), flip(3, 'L')],
-    [squeeze(0, 'L', 3), reach(2, 'hiR')], [clap(0), clap(1), clap(2), clap(3)]
-  ],
-  // Between FLOW and SYNC: three quarter-note moves per bar, and the first both-hands doubles.
-  groove: [
-    [grab(0, 'L'), grab(1, 'R'), grab(2, 'L')], [reach(0, 'hiL'), reach(1, 'hiR'), clap(2)],
-    [grab(0, 'L'), grab(0, 'R')], [flip(0, 'L'), flip(2, 'R')],
-    [squeeze(0, 'L', 2), grab(1, 'R')], [sweep(0, 'riseR', 2), grab(1, 'L')],
-    [clap(0), grab(1, 'L'), grab(2, 'R'), clap(3)], [reach(0, 'wideL'), reach(0, 'wideR')],
-    [squeeze(0, 'R', 3), grab(2, 'L')], [flip(0, 'R'), flip(1, 'L'), clap(3)],
-    [sweep(0, 'rainbow', 3)], [grab(0, 'R'), reach(1, 'hiL'), grab(2, 'R'), clap(3)],
-    [flip(0, 'L'), flip(0, 'R')], [squeeze(0, 'L', 2), reach(1, 'hiR'), clap(3)]
-  ],
-  // Both hands at once: one hand holds while the other answers, and doubles on the same beat.
-  hard: [
-    [grab(0, 'L'), grab(0, 'R')], [reach(0, 'hiL'), reach(0, 'hiR')],
-    [squeeze(0, 'L', 3), grab(1, 'R'), grab(2, 'R')], [squeeze(0, 'R', 3), grab(1, 'L'), grab(2, 'L')],
-    [grab(0, 'L'), grab(1, 'R'), grab(2, 'L'), clap(3)], [flip(0, 'L'), flip(0, 'R'), clap(2)],
-    [sweep(0, 'riseL', 2), reach(2, 'hiR')], [sweep(0, 'rainbowBack', 3)],
-    [squeeze(0, 'L', 2), flip(1, 'R'), clap(3)], [reach(0, 'wideL'), reach(1, 'wideR'), reach(2, 'hiL'), reach(3, 'hiR')],
-    [sweep(0, 'scoopR', 3), grab(1, 'L')], [grab(0, 'R'), squeeze(1, 'L', 2), grab(2, 'R')],
-    [clap(0), grab(1, 'L'), grab(1, 'R'), clap(2)], [squeeze(0, 'R', 3), reach(1, 'hiL'), reach(2, 'wideL')]
-  ],
-  // Between SYNC and OVERDRIVE: at most one off-beat per bar, a few echo-twice bars.
-  bounce: [
-    [grab(0, 'L'), grab(1.5, 'R'), clap(3)], [reach(0, 'hiL'), reach(0, 'hiR'), clap(2)],
-    again([grab(0, 'L'), grab(1, 'R'), grab(2, 'L')]), [squeeze(0, 'L', 3), grab(1, 'R'), grab(2, 'R')],
-    [flip(0, 'L'), flip(0, 'R'), grab(2, 'L'), grab(2, 'R')], [sweep(0, 'riseL', 2), grab(.5, 'R'), grab(2, 'R')],
-    [clap(0), clap(1.5), grab(3, 'L')], [squeeze(0, 'R', 2), reach(1, 'hiL'), clap(3)],
-    [reach(0, 'wideL'), reach(1, 'wideR'), reach(2, 'hiL'), reach(3, 'hiR')], [sweep(0, 'rainbowBack', 3)],
-    again([flip(0, 'R'), clap(2)]), [grab(0, 'L'), grab(0, 'R'), clap(1.5), grab(3, 'L'), grab(3, 'R')],
-    [squeeze(0, 'L', 3), reach(.5, 'hiR'), reach(2, 'loR')], [sweep(0, 'scoopR', 3), grab(1, 'L')]
-  ],
-  // Off-beats and back-to-back echoes without a new call.
-  expert: [
-    [grab(0, 'L'), grab(1.5, 'R'), clap(3)], again([reach(0, 'hiL'), reach(1, 'hiR'), clap(2)]),
-    [flip(0, 'L'), flip(1.5, 'R'), grab(3, 'L')], [squeeze(0, 'L', 3), grab(.5, 'R'), grab(2, 'R')],
-    again([clap(0), clap(1), clap(2)]), [sweep(0, 'riseR', 2), grab(.5, 'L'), grab(2.5, 'L')],
-    [reach(0, 'wideL'), reach(.5, 'wideR'), grab(2, 'L'), grab(2, 'R')], [sweep(0, 'riseR', 2), clap(3)],
-    again([grab(0, 'R'), grab(1, 'L'), flip(2, 'R')]), [squeeze(0, 'R', 2), reach(1.5, 'hiL'), clap(3)],
-    [grab(0, 'L'), grab(.5, 'R'), grab(1.5, 'L'), grab(2, 'R'), clap(3)], [sweep(0, 'scoopL', 3), flip(1.5, 'R')]
-  ],
-  // Three-against-two between hands: the left hand plays every 1.5 beats, the right every 2.
-  master: [
-    [grab(0, 'L'), grab(1.5, 'L'), grab(3, 'L'), grab(0, 'R'), grab(2, 'R')],
-    [reach(0, 'hiL'), reach(1.5, 'loL'), reach(3, 'hiL'), reach(0, 'hiR'), reach(2, 'loR')],
-    again([clap(0), grab(1.5, 'L'), grab(2, 'R'), clap(3)]),
-    [squeeze(0, 'R', 3), grab(0, 'L'), grab(1.5, 'L'), grab(3, 'L')],
-    [sweep(0, 'riseL', 3), grab(0, 'R'), grab(2, 'R')],
-    [flip(0, 'L'), flip(1.5, 'L'), flip(3, 'L'), flip(0, 'R'), flip(2, 'R')],
-    again([reach(0, 'wideL'), reach(0, 'wideR'), clap(1.5), grab(3, 'L'), grab(3, 'R')]),
-    [squeeze(0, 'L', 3), reach(0, 'hiR'), reach(1.5, 'loR'), reach(3, 'hiR')],
-    [sweep(0, 'riseL', 2), clap(3)], [sweep(0, 'scoopR', 3), grab(0, 'L'), grab(1.5, 'L')]
-  ]
+// The same phrase played by the other hand: sides, spots, paths and flip directions swap.
+const SWAP = { L: 'R', R: 'L', hiL: 'hiR', hiR: 'hiL', wideL: 'wideR', wideR: 'wideL', midL: 'midR', midR: 'midL', loL: 'loR', loR: 'loL',
+  riseL: 'riseR', riseR: 'riseL', dropL: 'dropR', dropR: 'dropL', scoopL: 'scoopR', scoopR: 'scoopL', rainbow: 'rainbowBack', rainbowBack: 'rainbow', left: 'right', right: 'left' };
+const sw = v => SWAP[v] ?? v;
+export function mirror(def) {
+  const flipNote = n => ({ ...n, side: sw(n.side), ...(n.at && { at: sw(n.at) }), ...(n.path && { path: sw(n.path) }), ...(n.dir && { dir: sw(n.dir) }) });
+  return Array.isArray(def) ? def.map(flipNote) : { ...def, notes: def.notes.map(flipNote) };
+}
+
+// Difficulty tiers shared by every track. EASY lets either hand play anything; from NORMAL up,
+// notes on the left half belong to the left hand. Long sweeps (rainbow, scoop) only appear in HARD and EXPERT.
+export const DIFFICULTIES = {
+  easy:   { name: 'EASY',   sides: false, hints: true },
+  normal: { name: 'NORMAL', sides: true },
+  hard:   { name: 'HARD',   sides: true },
+  expert: { name: 'EXPERT', sides: true }
 };
+
+// Each track has its own groove, tempo and character; its four charts are written as a song:
+// intro, verse (a motif and its mirror), chorus, bridge and a busier finale.
+export const TRACKS = {
+  snack: {
+    title: 'SNACK ATTACK', bpm: 100, groove: 'bounce', blurb: 'Bouncy warm-up · on-beat moves',
+    charts: {
+      easy: { lv: 1, defs: [
+        [grab(0, 'L')], [grab(2, 'R')],
+        [grab(0, 'L'), grab(2, 'R')], [clap(0)], [reach(0, 'hiL')], [reach(0, 'hiR')],
+        [clap(0), clap(2)], [grab(0, 'L'), clap(2)], [squeeze(0, 'L', 2)], [flip(0, 'R')],
+        [sweep(0, 'riseL', 2)], [flip(0, 'L')],
+        [grab(0, 'L'), grab(2, 'R')], [clap(0), clap(1), clap(2)]
+      ] },
+      normal: { lv: 4, defs: [
+        [grab(0, 'L'), grab(2, 'R')], mirror([grab(0, 'L'), grab(2, 'R')]),
+        [grab(0, 'L'), grab(1, 'R'), clap(2)], mirror([grab(0, 'L'), grab(1, 'R'), clap(2)]),
+        [reach(0, 'hiL'), reach(1, 'hiR'), clap(3)], [reach(0, 'wideR'), reach(1, 'wideL'), clap(3)],
+        [clap(0), grab(1, 'L'), grab(2, 'R'), clap(3)], [flip(0, 'L'), flip(2, 'R')],
+        [squeeze(0, 'L', 2), grab(1, 'R')], mirror([squeeze(0, 'L', 2), grab(1, 'R')]),
+        [sweep(0, 'riseL', 2), grab(3, 'R')], mirror([sweep(0, 'riseL', 2), grab(3, 'R')]),
+        [grab(0, 'L'), grab(0, 'R'), clap(2)], [clap(0), clap(1), flip(2, 'L'), flip(3, 'R')]
+      ] },
+      hard: { lv: 7, defs: [
+        [grab(0, 'L'), grab(1, 'R'), grab(2, 'L'), grab(3, 'R')],
+        [grab(0, 'L'), grab(1.5, 'R'), clap(3)], mirror([grab(0, 'L'), grab(1.5, 'R'), clap(3)]),
+        [squeeze(0, 'L', 3), grab(1, 'R'), grab(2, 'R')], mirror([squeeze(0, 'L', 3), grab(1, 'R'), grab(2, 'R')]),
+        again([clap(0), grab(1, 'L'), grab(1, 'R'), clap(2)]),
+        [reach(0, 'hiL'), reach(.5, 'hiR'), reach(2, 'wideL'), reach(2.5, 'wideR')],
+        [flip(0, 'L'), flip(1, 'R'), flip(2, 'L'), clap(3)],
+        [sweep(0, 'scoopL', 3), grab(1, 'R'), grab(2, 'R')], mirror([sweep(0, 'scoopL', 3), grab(1, 'R'), grab(2, 'R')]),
+        [grab(0, 'L'), grab(0, 'R'), clap(1.5), grab(3, 'L'), grab(3, 'R')],
+        again([flip(0, 'R'), clap(2)]), [sweep(0, 'rainbow', 3)]
+      ] },
+      expert: { lv: 10, defs: [
+        [grab(0, 'L'), grab(.5, 'R'), grab(1.5, 'L'), grab(2, 'R'), clap(3)],
+        again([reach(0, 'hiL'), reach(1, 'hiR'), clap(2)]),
+        [flip(0, 'L'), flip(1.5, 'R'), grab(3, 'L')],
+        [squeeze(0, 'L', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')], mirror([squeeze(0, 'L', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')]),
+        again([clap(0), clap(1), clap(2)]),
+        [grab(0, 'L'), grab(1.5, 'L'), grab(3, 'L'), grab(0, 'R'), grab(2, 'R')],
+        [reach(0, 'hiL'), reach(1.5, 'loL'), reach(3, 'hiL'), reach(0, 'hiR'), reach(2, 'loR')],
+        [sweep(0, 'riseL', 2), grab(.5, 'R'), grab(2, 'R')], mirror([sweep(0, 'riseL', 2), grab(.5, 'R'), grab(2, 'R')]),
+        again([grab(0, 'L'), grab(0, 'R'), clap(1.5), flip(3, 'L')]),
+        [sweep(0, 'rainbow', 3)], [sweep(0, 'rainbowBack', 3)]
+      ] }
+    }
+  },
+  kitchen: {
+    title: 'GROOVE KITCHEN', bpm: 116, groove: 'funk', blurb: 'Funky off-beats · stir with sweeps',
+    charts: {
+      easy: { lv: 2, defs: [
+        [grab(0, 'L')], [clap(0), clap(2)], [reach(0, 'hiR'), reach(2, 'hiL')], [squeeze(0, 'L', 3)],
+        [grab(0, 'R'), grab(2, 'L')], [flip(0, 'L'), flip(2, 'R')], [sweep(0, 'riseL', 2)], [clap(0), grab(2, 'R')],
+        [sweep(0, 'riseR', 2)], [reach(0, 'wideL'), reach(2, 'wideR')], [squeeze(0, 'R', 2), clap(3)], [clap(0), clap(1), clap(2), clap(3)]
+      ] },
+      normal: { lv: 5, defs: [
+        [grab(0, 'L'), grab(1.5, 'R')], mirror([grab(0, 'L'), grab(1.5, 'R')]),
+        [clap(0), grab(1, 'L'), grab(2.5, 'R')], mirror([clap(0), grab(1, 'L'), grab(2.5, 'R')]),
+        [sweep(0, 'dropL', 2), grab(2, 'R')], mirror([sweep(0, 'dropL', 2), grab(2, 'R')]),
+        again([clap(0), clap(1.5)]),
+        [squeeze(0, 'L', 2), flip(1, 'R'), flip(3, 'R')], mirror([squeeze(0, 'L', 2), flip(1, 'R'), flip(3, 'R')]),
+        [reach(0, 'hiL'), reach(1, 'midR'), reach(2, 'hiR'), reach(3, 'midL')],
+        [grab(0, 'L'), grab(0, 'R'), clap(2)], [clap(0), grab(1.5, 'L'), grab(1.5, 'R'), clap(3)]
+      ] },
+      hard: { lv: 8, defs: [
+        [grab(0, 'L'), grab(.5, 'R'), clap(2)], mirror([grab(0, 'L'), grab(.5, 'R'), clap(2)]),
+        again([clap(0), grab(1.5, 'L'), clap(3)]),
+        [squeeze(0, 'L', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')], mirror([squeeze(0, 'L', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')]),
+        [sweep(0, 'scoopL', 3), flip(1.5, 'R')], mirror([sweep(0, 'scoopL', 3), flip(1.5, 'R')]),
+        [reach(0, 'wideL'), reach(.5, 'wideR'), reach(1.5, 'hiL'), reach(2, 'hiR'), clap(3)],
+        [flip(0, 'L'), flip(0, 'R'), clap(1.5), grab(3, 'L'), grab(3, 'R')],
+        again([grab(0, 'L'), grab(1, 'R'), grab(1.5, 'L'), clap(3)]),
+        [squeeze(0, 'R', 3), reach(.5, 'hiL'), reach(2, 'loL')], [sweep(0, 'rainbowBack', 3)]
+      ] },
+      expert: { lv: 11, defs: [
+        [grab(0, 'L'), grab(.5, 'R'), grab(1, 'L'), grab(1.5, 'R'), clap(3)], mirror([grab(0, 'L'), grab(.5, 'R'), grab(1, 'L'), grab(1.5, 'R'), clap(3)]),
+        again([clap(0), clap(1), grab(2, 'L'), grab(2.5, 'R')]),
+        [squeeze(0, 'L', 3), flip(.5, 'R'), flip(1.5, 'R'), flip(2.5, 'R')], mirror([squeeze(0, 'L', 3), flip(.5, 'R'), flip(1.5, 'R'), flip(2.5, 'R')]),
+        [sweep(0, 'scoopL', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')], mirror([sweep(0, 'scoopL', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')]),
+        again([reach(0, 'hiL'), reach(.5, 'hiR'), reach(1, 'midL'), reach(1.5, 'midR'), clap(3)]),
+        [grab(0, 'L'), grab(1.5, 'L'), grab(3, 'L'), grab(.5, 'R'), grab(2, 'R')],
+        [flip(0, 'L'), flip(0, 'R'), clap(1), flip(2, 'L'), flip(2.5, 'R')],
+        [sweep(0, 'rainbowBack', 3)]
+      ] }
+    }
+  },
+  rush: {
+    title: 'SUGAR RUSH', bpm: 128, groove: 'drive', blurb: 'Four-on-the-floor · fast and busy',
+    charts: {
+      easy: { lv: 3, defs: [
+        [grab(0, 'L'), grab(2, 'R')], [clap(0), clap(2)], [reach(0, 'hiL'), reach(1, 'hiR')], [flip(0, 'R'), flip(2, 'L')],
+        [squeeze(0, 'L', 2), clap(3)], [grab(0, 'R'), grab(1, 'L'), grab(2, 'R')], [sweep(0, 'riseL', 2), clap(3)], [sweep(0, 'riseR', 2), clap(3)],
+        [clap(0), clap(1), clap(2), clap(3)], [reach(0, 'wideL'), reach(1, 'wideR'), reach(2, 'hiL'), reach(3, 'hiR')], [squeeze(0, 'R', 3)], [grab(0, 'L'), grab(0, 'R'), clap(2)]
+      ] },
+      normal: { lv: 6, defs: [
+        [grab(0, 'L'), grab(1, 'R'), grab(2, 'L'), grab(3, 'R')], mirror([grab(0, 'L'), grab(1, 'R'), grab(2, 'L'), grab(3, 'R')]),
+        [clap(0), flip(1, 'L'), flip(2, 'R'), clap(3)], [reach(0, 'hiL'), reach(0, 'hiR'), clap(2)],
+        [squeeze(0, 'L', 3), grab(1, 'R'), grab(2, 'R')], mirror([squeeze(0, 'L', 3), grab(1, 'R'), grab(2, 'R')]),
+        again([clap(0), clap(1), clap(2)]),
+        [sweep(0, 'riseL', 2), grab(1, 'R'), grab(2, 'R')], mirror([sweep(0, 'riseL', 2), grab(1, 'R'), grab(2, 'R')]),
+        [grab(0, 'L'), grab(1.5, 'R'), grab(3, 'L')], [flip(0, 'L'), flip(0, 'R'), clap(2)]
+      ] },
+      hard: { lv: 9, defs: [
+        [grab(0, 'L'), grab(.5, 'R'), grab(1.5, 'L'), grab(2, 'R'), clap(3)], mirror([grab(0, 'L'), grab(.5, 'R'), grab(1.5, 'L'), grab(2, 'R'), clap(3)]),
+        again([flip(0, 'L'), flip(1, 'R'), clap(2)]),
+        [squeeze(0, 'L', 3), reach(.5, 'hiR'), reach(1.5, 'wideR'), reach(2.5, 'hiR')], mirror([squeeze(0, 'L', 3), reach(.5, 'hiR'), reach(1.5, 'wideR'), reach(2.5, 'hiR')]),
+        [sweep(0, 'dropL', 2), grab(.5, 'R'), grab(1.5, 'R'), clap(3)], mirror([sweep(0, 'dropL', 2), grab(.5, 'R'), grab(1.5, 'R'), clap(3)]),
+        [reach(0, 'wideL'), reach(.5, 'wideR'), reach(1, 'hiL'), reach(1.5, 'hiR'), clap(3)],
+        again([clap(0), clap(1), grab(2, 'L'), grab(2, 'R')]),
+        [grab(0, 'L'), grab(1.5, 'L'), grab(3, 'L'), grab(0, 'R'), grab(2, 'R')], [sweep(0, 'rainbow', 3)]
+      ] },
+      expert: { lv: 12, defs: [
+        again([grab(0, 'L'), grab(.5, 'R'), grab(1, 'L'), grab(1.5, 'R'), clap(3)]),
+        [flip(0, 'L'), flip(.5, 'R'), flip(1.5, 'L'), flip(2, 'R'), clap(3)],
+        [squeeze(0, 'L', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')], mirror([squeeze(0, 'L', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')]),
+        again([clap(0), clap(1), clap(2), clap(3)]),
+        [sweep(0, 'scoopL', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')], mirror([sweep(0, 'scoopL', 3), grab(.5, 'R'), grab(1.5, 'R'), grab(2.5, 'R')]),
+        [reach(0, 'hiL'), reach(.5, 'hiR'), reach(1, 'midL'), reach(1.5, 'midR'), reach(2, 'loL'), reach(2.5, 'loR')],
+        again([grab(0, 'L'), grab(0, 'R'), clap(1), flip(2, 'L'), flip(2.5, 'R')]),
+        [grab(0, 'L'), grab(1.5, 'L'), grab(3, 'L'), grab(.5, 'R'), grab(2, 'R')],
+        [sweep(0, 'rainbow', 3)], [sweep(0, 'rainbowBack', 3)]
+      ] }
+    }
+  }
+};
+
+// Every chart by "track/difficulty" key, for linting and tests.
+export const SONGS = Object.fromEntries(Object.entries(TRACKS).flatMap(([t, track]) => Object.entries(track.charts).map(([d, c]) => [`${t}/${d}`, c.defs])));
+export const chartFor = (track, diff) => TRACKS[track]?.charts[diff] ?? TRACKS.snack.charts.normal;
 
 // --- geometry ---------------------------------------------------------------------------------
 
@@ -157,14 +229,6 @@ function placeGesture(note, index) {
   return { x: (note.side === 'L' ? .2 : .8) + inward * z.x, y: .18 + z.y };
 }
 
-// Gesture style: position never counts, so the moves that are only about where your hand is become poses.
-// REACH becomes a GRAB on the same side; SWEEP becomes a SQUEEZE held for the same beats.
-export function gestureOnly(def) {
-  const pose = n => n.type === 'reach' ? { beat: n.beat, type: 'grab', side: n.side }
-    : n.type === 'sweep' ? { beat: n.beat, type: 'squeeze', side: n.side, dur: n.dur } : n;
-  return Array.isArray(def) ? def.map(pose) : { ...def, notes: def.notes.map(pose) };
-}
-
 let nextId = 0;
 // Turn one phrase definition into timed notes. `start` is the beat where the CALL bar begins.
 export function buildPhrase(def, start, beat, phraseIndex, options = {}) {
@@ -199,10 +263,10 @@ export function buildPhrase(def, start, beat, phraseIndex, options = {}) {
 
 // Same-hand moves closer than this are not physically comfortable through a camera.
 export const MIN_SAME_HAND_GAP = .4;
-export function lintSong(level, bpm) {
+export function lintSong(key, bpm) {
   const beat = 60 / bpm, problems = [];
-  SONGS[level].forEach((def, i) => {
-    const notes = Array.isArray(def) ? def : def.notes, where = `${level} phrase ${i + 1}`;
+  SONGS[key].forEach((def, i) => {
+    const notes = Array.isArray(def) ? def : def.notes, where = `${key} phrase ${i + 1}`;
     // Both-hand moves (clap, centre reaches, overhead sweeps) occupy both hands.
     for (const side of ['L', 'R']) {
       const own = notes.filter(n => n.side === side || n.side === 'B').sort((a, b) => a.beat - b.beat);
@@ -220,8 +284,8 @@ export function lintSong(level, bpm) {
 }
 
 // A song is a fixed list of phrases; the tutorial supplies phrases one at a time instead.
-export function songSource(level, bpm, options = {}) {
-  const defs = SONGS[level] || SONGS.normal;
+export function songSource(track, diff, options = {}) {
+  const defs = chartFor(track, diff).defs;
   let i = 0;
   return { total: defs.length, next: () => i < defs.length ? { def: defs[i++], options } : null };
 }
